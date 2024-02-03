@@ -5,13 +5,15 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import OperationFailure
 import psutil  # Import psutil for system monitoring
+import os
 
 # Configure basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define a constant for the monitoring interval
-MONITOR_INTERVAL_SECONDS = 10
+MONITOR_INTERVAL_SECONDS = 20
+URI = os.getenv('MONGO_CONNECTION_STRING')
 
 async def count_connections(uri):
     """
@@ -19,23 +21,30 @@ async def count_connections(uri):
     
     :param uri: MongoDB URI string
     """
+    client = None  # Initialize client outside of try block
     try:
-        async with AsyncIOMotorClient(uri) as client:
-            server_status = await client.admin.command("serverStatus")
-            connections = server_status['connections']['current']
-            logger.info(f"Current MongoDB connections: {connections}")
+        client = AsyncIOMotorClient(uri)
+        server_status = await client.admin.command("serverStatus")
+        connections = server_status['connections']['current']
+        logger.info(f"Current MongoDB connections: {connections}")
     except OperationFailure as e:
         logger.error(f"MongoDB operation failed: {e}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
+    finally:
+        if client:
+            client.close()  # Explicitly close the client without awaiting
 
-async def monitor_system_resources(interval=MONITOR_INTERVAL_SECONDS):
+
+async def monitor_system_resources(uri=URI, interval=MONITOR_INTERVAL_SECONDS):
     """
-    Monitor system resources (CPU and Memory usage) every `interval` seconds.
+    Monitor system resources (CPU and Memory usage) and MongoDB connections every `interval` seconds.
     
+    :param uri: MongoDB URI string
     :param interval: Interval in seconds between checks
     """
     while True:
+        # Check system resources
         cpu_usage = psutil.cpu_percent(interval=1)  # Ensure fresh CPU usage info
         memory_usage = psutil.virtual_memory().percent
         if cpu_usage > 90 or memory_usage > 90:
@@ -43,4 +52,10 @@ async def monitor_system_resources(interval=MONITOR_INTERVAL_SECONDS):
         else:
             logger.info(f"System resources within normal parameters. CPU: {cpu_usage}%, Memory: {memory_usage}%")
         
-        await asyncio.sleep(interval)
+        # Now check MongoDB connections within the same loop
+        connections = await count_connections(uri)
+        if connections is not None:  # Only log if count_connections succeeded
+            logger.info(f"Monitored MongoDB connections: {connections}")
+
+        await asyncio.sleep(interval)  # Sleep at the end of the loop for the specified interval
+

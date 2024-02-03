@@ -25,7 +25,8 @@ class Database:
             try:
                 connection_string = os.getenv('MONGO_CONNECTION_STRING')
                 db_name = os.getenv('MONGO_DB_NAME', 'shopDEV')  # Default to 'shopDEV'
-                self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string)
+                pool_size = os.getenv('POOL_SIZE', 100)
+                self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string, maxPoolSize=pool_size)
                 self._db = self._client[db_name]
                 self._is_connected = True
                 # Consider moving connection count check to a dedicated monitoring or debugging endpoint
