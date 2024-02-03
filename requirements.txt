@@ -3,3 +3,4 @@ fastapi
 brotli-asgi
 motor
 python-dotenv
+psutil

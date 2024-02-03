@@ -6,9 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import time
 import logging
 from brotli_asgi import BrotliMiddleware
-from src.dbs.init_mongodb import Database  # Import the Database class
+from src.dbs.init_mongodb import Database, start_monitoring
 from src.utils.status_codes import STATUS_TEXTS
-
+import asyncio
 app = FastAPI()
 
 # Configure logging
@@ -50,11 +50,13 @@ db_instance = Database()  # Instantiate the Database outside event handlers for 
 @app.on_event("startup")
 async def startup_db_client():
     await db_instance.connect()
+    # Start system resource monitoring in the background
+    asyncio.create_task(start_monitoring())
 
 @app.get("/items/{item_id}")
 async def read_item(item_id: str):
     db = await db_instance.get_db()
-    collection = db['your_collection_name']  # Replace with your actual collection name
+    collection = db['tson']  # Replace with your actual collection name
     item = await collection.find_one({"item_id": item_id})
     if item:
         return item

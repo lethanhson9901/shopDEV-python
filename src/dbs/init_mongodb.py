@@ -3,6 +3,7 @@
 import motor.motor_asyncio
 from dotenv import load_dotenv
 import os
+from src.helpers.check_connect import monitor_system_resources
 
 load_dotenv()  # Ideally placed in the entry point of your application
 
@@ -37,3 +38,7 @@ class Database:
         if not self._is_connected:
             await self.connect()
         return self._db
+
+# Function to start the monitoring process
+async def start_monitoring():
+    await monitor_system_resources()
