@@ -1,12 +1,14 @@
 # src/dbs/init_mongodb.py
+
 import motor.motor_asyncio
 from dotenv import load_dotenv
 import os
 
-load_dotenv()  # Take environment variables from .env.
+load_dotenv()  # Ideally placed in the entry point of your application
 
 class Database:
     _instance = None
+    _is_connected = False
 
     def __new__(cls):
         if cls._instance is None:
@@ -18,14 +20,20 @@ class Database:
         self._db = None
 
     async def connect(self):
-        if not self._client or not self._db:
-            connection_string = os.getenv('MONGO_CONNECTION_STRING')
-            self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string)
-            self._db = self._client['shopDEV']  # Use your database name here.
+        if not self._is_connected:
+            try:
+                connection_string = os.getenv('MONGO_CONNECTION_STRING')
+                db_name = os.getenv('MONGO_DB_NAME', 'shopDEV')  # Default to 'shopDEV'
+                self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string)
+                self._db = self._client[db_name]
+                self._is_connected = True
+                # Consider moving connection count check to a dedicated monitoring or debugging endpoint
+            except Exception as e:
+                # More specific exception handling can be added here
+                print(f"Failed to connect to MongoDB: {e}")
+                self._is_connected = False
 
     async def get_db(self):
-        await self.connect()
+        if not self._is_connected:
+            await self.connect()
         return self._db
-
-# To ensure that the database connection is established on application startup,
-# you can use the Database.connect() method with FastAPI's event handlers.
