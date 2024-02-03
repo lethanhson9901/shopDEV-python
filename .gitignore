@@ -1,0 +1,4 @@
+# Global .gitignore
+__pycache__/
+.env
+
