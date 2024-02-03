@@ -1,8 +1,5 @@
 
 
-As there is no direct access to the repository "shopDEV-python" on GitHub to read your project, I will provide you with a professional README.md template that you can use for your project. You will need to fill in the specific details about your application, but the structure will be laid out for you.
-
-```markdown
 # shopDEV-python
 
 Welcome to the shopDEV-python repository. This is a backend service for an e-commerce platform, designed with best practices in mind to provide a robust and scalable service.
