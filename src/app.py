@@ -1,55 +1,62 @@
 # src/app.py
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-import time
 from brotli_asgi import BrotliMiddleware
-from src.dbs.init_mongodb import Database, start_monitoring
-from src.utils.status_codes import STATUS_TEXTS
 import asyncio
+from src.dbs.init_mongodb import Database, start_monitoring
 from src.helpers.log_config import setup_logger, log_requests, scheduled_cleanup
+from src.routers.welcome_router import router as welcome_router
+
+app = FastAPI(title='Python-Dev API', description='A sample FastAPI application.', version='1.0.0')
 
 logger = setup_logger()
 
+# Declare db_instance at the module level to ensure it's accessible in the shutdown event
+db_instance = Database()
 
-app = FastAPI()
+def configure_middlewares(application: FastAPI):
+    """Configure application middlewares."""
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+    application.add_middleware(BrotliMiddleware)
 
-# Initialize middlewares
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(BrotliMiddleware)
+def configure_logging_middleware(application: FastAPI):
+    """Add logging middleware to the application."""
+    application.middleware("http")(log_requests)
 
-# Request logging middleware
-app.middleware("http")(log_requests)
-
-
-db_instance = Database()  # Instantiate the Database outside event handlers for clarity
+def include_routers(application: FastAPI):
+    """Include application routers."""
+    application.include_router(welcome_router)
 
 @app.on_event("startup")
-async def startup_db_client():
-    # Connect to the database
+async def startup_event():
+    """Application startup: connect to the database, start background tasks."""
     await db_instance.connect()
-    
-    # Start system resource monitoring in the background
     asyncio.create_task(start_monitoring())
-    
-    # Specify the directory where your logs are stored and start the scheduled log cleanup task
-    logs_dir = 'logs'  # Adjust this path if necessary
-    asyncio.create_task(scheduled_cleanup(logs_dir, 30))  # Schedule log cleanup task
+    logs_dir = 'logs'  # Ensure this directory exists or is created
+    asyncio.create_task(scheduled_cleanup(logs_dir, 30))  # Cleanup interval as needed
 
-@app.get("/items/{item_id}")
-async def read_item(item_id: str):
-    db = await db_instance.get_db()
-    collection = db['tson']  # Replace with your actual collection name
-    item = await collection.find_one({"item_id": item_id})
-    if item:
-        return item
-    return JSONResponse(status_code=404, content={"message": "Item not found"})
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Application shutdown: disconnect from the database."""
+    await db_instance.disconnect()
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}")  # Log unhandled exceptions for debugging
+    """Handle global exceptions."""
+    logger.error(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"message": "An unexpected error occurred."},
+        content={"message": "An unexpected error occurred."}
     )
+
+# Apply configuration functions
+configure_middlewares(app)
+configure_logging_middleware(app)
+include_routers(app)

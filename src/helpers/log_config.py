@@ -9,13 +9,17 @@ import shutil
 from datetime import datetime, timedelta
 import time
 import asyncio
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Response
 from fastapi.responses import JSONResponse
+from starlette.responses import StreamingResponse
+from typing import Callable
 
 APP_NAME = 'python-dev'
+MAX_RESPONSE_BODY_LOG_LENGTH = 1024
 
 # Global flag to prevent reinitialization of logger
 logger_initialized = False
+global_logger = None  # Define a global variable for the logger instance
 
 
 class CustomRotatingFileHandler(RotatingFileHandler):
@@ -104,29 +108,24 @@ def setup_logger() -> logging.Logger:
     Returns:
         logging.Logger: The configured logger.
     """
-    global logger_initialized
-    logger = logging.getLogger(__name__)
-    if not logger_initialized:
+    global global_logger
+    if global_logger is None:
+        logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
         logs_dir = 'logs'
         if not os.path.exists(logs_dir):
             os.makedirs(logs_dir)
 
-        handler = CustomRotatingFileHandler(
-            app_name=APP_NAME, dir_name=logs_dir, max_bytes=0,
-            backup_count=3, encoding='utf-8')
+        handler = CustomRotatingFileHandler(app_name=APP_NAME, dir_name=logs_dir, max_bytes=0, backup_count=3, encoding='utf-8')
         handler.rotator = GZipRotator()
         handler.namer = lambda name: name.replace(".log", "") + ".gz"
-
-        formatter = logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
         handler.setFormatter(formatter)
-
         logger.addHandler(handler)
-        logger_initialized = True
 
-    return logger
+        global_logger = logger  # Store the configured logger in the global variable
+
+    return global_logger
 
 
 
@@ -141,25 +140,36 @@ async def log_requests(request: Request, call_next):
     Returns:
         Response: The response object to be sent back to the client.
     """
-    logger = setup_logger()  # Ensure logger is setup correctly
+    logger = setup_logger()  # Ensure logger is properly initialized
     start_time = time.time()
-
+    
     try:
         response = await call_next(request)
+        # Capture response body for logging without affecting the actual response
+        response_body = b""
+        async for chunk in response.body_iterator:
+            response_body += chunk
+        # Reconstruct the response to ensure body is not consumed
+        response = Response(content=response_body, status_code=response.status_code, headers=dict(response.headers), media_type=response.media_type)
     except HTTPException as e:
         logger.warning(f"HTTP exception: {e.detail} - Status: {e.status_code}")
         return JSONResponse(status_code=e.status_code, content={"message": e.detail})
     except Exception as e:
         logger.error(f"Unhandled exception: {str(e)}")
         return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
-    
+
     process_time = time.time() - start_time
     client_host = request.client.host if request.client else "client host unknown"
     request_line = f'"{request.method} {request.url.path} HTTP/{request.scope["http_version"]}"'
-    
-    logger.info(f"{client_host} - {request_line} {response.status_code} "
-                f"- Processing time: {process_time:.6f} sec")
+
+    # Log response body snippet if present
+    response_body_snippet = response_body.decode('utf-8')[:MAX_RESPONSE_BODY_LOG_LENGTH] + "..." if len(response_body) > MAX_RESPONSE_BODY_LOG_LENGTH else response_body.decode('utf-8')
+
+    log_message = f"{client_host} - {request_line} {response.status_code} - {process_time:.6f} sec - {response_body_snippet}"
+
+    logger.info(log_message)
     return response
+
 
 
 def cleanup_old_logs(logs_dir='logs', days_old=30):
