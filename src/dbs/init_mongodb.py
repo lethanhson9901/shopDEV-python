@@ -1,11 +1,8 @@
 # src/dbs/init_mongodb.py
 
 import motor.motor_asyncio
-from dotenv import load_dotenv
-import os
+from src.configs.config import CurrentConfig
 from src.helpers.check_connect import monitor_system_resources
-
-load_dotenv()  # Ideally placed in the entry point of your application
 
 class Database:
     _instance = None
@@ -23,15 +20,15 @@ class Database:
     async def connect(self):
         if not self._is_connected:
             try:
-                connection_string = os.getenv('MONGO_CONNECTION_STRING')
-                db_name = os.getenv('MONGO_DB_NAME', 'shopDEV')  # Default to 'shopDEV'
-                pool_size = os.getenv('POOL_SIZE', 100)
+                # Use configuration from CurrentConfig
+                connection_string = CurrentConfig.MONGO_CONNECTION_STRING
+                db_name = CurrentConfig.MONGO_DB_NAME  # Now using CurrentConfig
+                pool_size = CurrentConfig.POOL_SIZE  # This is already handled by CurrentConfig
+                
                 self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string, maxPoolSize=pool_size)
                 self._db = self._client[db_name]
                 self._is_connected = True
-                # Consider moving connection count check to a dedicated monitoring or debugging endpoint
             except Exception as e:
-                # More specific exception handling can be added here
                 print(f"Failed to connect to MongoDB: {e}")
                 self._is_connected = False
 
@@ -40,6 +37,5 @@ class Database:
             await self.connect()
         return self._db
 
-# Function to start the monitoring process
 async def start_monitoring():
     await monitor_system_resources()

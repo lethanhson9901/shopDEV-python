@@ -5,13 +5,15 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import OperationFailure
 import psutil  # Import psutil for system monitoring
-import os
 from src.helpers.log_config import setup_logger
+from src.configs.config import CurrentConfig  # Import CurrentConfig for centralized configuration
 
 # Define a constant for the monitoring interval
 MONITOR_INTERVAL_SECONDS = 20
-URI = os.getenv('MONGO_CONNECTION_STRING')
-MAX_POOL_SIZE = os.getenv('POOL_SIZE')
+
+# Use the CurrentConfig for MongoDB URI and Pool Size
+URI = CurrentConfig.MONGO_CONNECTION_STRING
+MAX_POOL_SIZE = CurrentConfig.POOL_SIZE
 
 logger = setup_logger()
 

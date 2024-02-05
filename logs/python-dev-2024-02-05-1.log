@@ -1,0 +1,6 @@
+2024-02-05 10:05:26 INFO: System resources within normal parameters. CPU: 30.5%, Memory: 72.1%
+2024-02-05 10:05:26 INFO: Current MongoDB connections: 3
+2024-02-05 10:05:33 INFO: 127.0.0.1 - "GET / HTTP/1.1" 404 - Processing time: 0.000395 sec
+2024-02-05 10:05:37 INFO: 127.0.0.1 - "GET / HTTP/1.1" 404 - Processing time: 0.000390 sec
+2024-02-05 10:05:47 INFO: System resources within normal parameters. CPU: 9.8%, Memory: 73.1%
+2024-02-05 10:05:47 INFO: Current MongoDB connections: 3

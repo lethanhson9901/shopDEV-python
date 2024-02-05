@@ -92,4 +92,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * etc
 ```
 
-# find /path/to/directory -type d -name "__pycache__" -exec rm -r {} \;
+# find ./ -type d -name "__pycache__" -exec rm -r {} \;
