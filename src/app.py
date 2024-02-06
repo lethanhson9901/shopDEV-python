@@ -6,7 +6,7 @@ from brotli_asgi import BrotliMiddleware
 import asyncio
 from src.dbs.init_mongodb import Database, start_monitoring
 from src.helpers.log_config import setup_logger, log_requests, scheduled_cleanup
-from src.routers.welcome_router import router as welcome_router
+from src.routers.api_v1_router import api_v1_router
 
 app = FastAPI(title='Python-Dev API', description='A sample FastAPI application.', version='1.0.0')
 
@@ -32,7 +32,7 @@ def configure_logging_middleware(application: FastAPI):
 
 def include_routers(application: FastAPI):
     """Include application routers."""
-    application.include_router(welcome_router)
+    application.include_router(api_v1_router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():

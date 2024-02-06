@@ -129,6 +129,47 @@ def setup_logger() -> logging.Logger:
 
 
 
+# async def log_requests(request: Request, call_next):
+#     """
+#     Middleware function to log incoming requests and their processing time.
+
+#     Args:
+#         request (Request): The incoming request.
+#         call_next: Function to proceed with request handling.
+
+#     Returns:
+#         Response: The response object to be sent back to the client.
+#     """
+#     logger = setup_logger()  # Ensure logger is properly initialized
+#     start_time = time.time()
+    
+#     try:
+#         response = await call_next(request)
+#         # Capture response body for logging without affecting the actual response
+#         response_body = b""
+#         async for chunk in response.body_iterator:
+#             response_body += chunk
+#         # Reconstruct the response to ensure body is not consumed
+#         response = Response(content=response_body, status_code=response.status_code, headers=dict(response.headers), media_type=response.media_type)
+#     except HTTPException as e:
+#         logger.warning(f"HTTP exception: {e.detail} - Status: {e.status_code}")
+#         return JSONResponse(status_code=e.status_code, content={"message": e.detail})
+#     except Exception as e:
+#         logger.error(f"Unhandled exception: {str(e)}")
+#         return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
+
+#     process_time = time.time() - start_time
+#     client_host = request.client.host if request.client else "client host unknown"
+#     request_line = f'"{request.method} {request.url.path} HTTP/{request.scope["http_version"]}"'
+
+#     # Log response body snippet if present
+#     response_body_snippet = response_body.decode('utf-8')[:MAX_RESPONSE_BODY_LOG_LENGTH] + "..." if len(response_body) > MAX_RESPONSE_BODY_LOG_LENGTH else response_body.decode('utf-8')
+
+#     log_message = f"{client_host} - {request_line} {response.status_code} - {process_time:.6f} sec - {response_body_snippet}"
+
+#     logger.info(log_message)
+#     return response
+
 async def log_requests(request: Request, call_next):
     """
     Middleware function to log incoming requests and their processing time.
@@ -142,15 +183,33 @@ async def log_requests(request: Request, call_next):
     """
     logger = setup_logger()  # Ensure logger is properly initialized
     start_time = time.time()
-    
+
     try:
         response = await call_next(request)
+
+        # Check if the response has a content-type header
+        content_type = response.headers.get("content-type", "")
+        is_binary_content = not content_type.startswith("text/") and not content_type.startswith("application/json")
+
         # Capture response body for logging without affecting the actual response
         response_body = b""
         async for chunk in response.body_iterator:
             response_body += chunk
-        # Reconstruct the response to ensure body is not consumed
-        response = Response(content=response_body, status_code=response.status_code, headers=dict(response.headers), media_type=response.media_type)
+
+        if is_binary_content:
+            # Log binary data without decoding
+            response_body_snippet = f"Binary data ({len(response_body)} bytes)"
+        else:
+            # Log text data with UTF-8 decoding
+            response_body_snippet = response_body.decode('utf-8', errors='ignore')[:MAX_RESPONSE_BODY_LOG_LENGTH] + "..." if len(response_body) > MAX_RESPONSE_BODY_LOG_LENGTH else response_body.decode('utf-8', errors='ignore')
+
+        # Reconstruct the response to ensure the body is not consumed
+        response = Response(
+            content=response_body,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type
+        )
     except HTTPException as e:
         logger.warning(f"HTTP exception: {e.detail} - Status: {e.status_code}")
         return JSONResponse(status_code=e.status_code, content={"message": e.detail})
@@ -161,9 +220,6 @@ async def log_requests(request: Request, call_next):
     process_time = time.time() - start_time
     client_host = request.client.host if request.client else "client host unknown"
     request_line = f'"{request.method} {request.url.path} HTTP/{request.scope["http_version"]}"'
-
-    # Log response body snippet if present
-    response_body_snippet = response_body.decode('utf-8')[:MAX_RESPONSE_BODY_LOG_LENGTH] + "..." if len(response_body) > MAX_RESPONSE_BODY_LOG_LENGTH else response_body.decode('utf-8')
 
     log_message = f"{client_host} - {request_line} {response.status_code} - {process_time:.6f} sec - {response_body_snippet}"
 
