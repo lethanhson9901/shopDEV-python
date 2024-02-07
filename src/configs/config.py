@@ -13,7 +13,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your_secret_key')  # JWT Secret key
     ALGORITHM = os.getenv('ALGORITHM', 'HS256')  # JWT Algorithm
     ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES', 30))  # Token Expiration Time
-    
+    REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv('REFRESH_TOKEN_EXPIRE_MINUTES', 43200))
 class DevelopmentConfig(Config):
     # Development-specific configurations
     MONGO_CONNECTION_STRING = os.getenv('MONGO_CONNECTION_STRING_DEV', 'mongodb://localhost:27017/dev_db')
