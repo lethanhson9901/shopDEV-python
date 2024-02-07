@@ -1,0 +1,41 @@
+2024-02-07 07:30:25 INFO: System resources within normal parameters. CPU: 17.8%, Memory: 73.4%
+2024-02-07 07:30:25 INFO: Current MongoDB connections: 3
+2024-02-07 07:30:29 INFO: 127.0.0.1 - "POST /api/v1/users/signup HTTP/1.1" 409 - 0.011352 sec - {"detail":"Email already registered"}
+2024-02-07 07:30:37 INFO: 127.0.0.1 - "POST /api/v1/users/signup HTTP/1.1" 201 - 0.298366 sec - {"message":"User signed up successfully","user":{"email":"user2@example.com","_id":"65c2cf2d66877138b64fb548"}}
+2024-02-07 07:30:46 INFO: System resources within normal parameters. CPU: 13.0%, Memory: 73.8%
+2024-02-07 07:30:46 INFO: Current MongoDB connections: 5
+2024-02-07 07:30:59 INFO: 127.0.0.1 - "POST /api/v1/users/login HTTP/1.1" 200 - 0.274335 sec - {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMkBleGFtcGxlLmNvbSIsImV4cCI6MTcwNzI2NzY1OX0.vnBqW5d8ejxKA7DYz4Sw4P8nylqETcfu8EBFlkcye8U","token_type":"bearer","refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMkBleGFtcGxlLmNvbSIsImV4cCI6MTcwOTg1Nzg1OX0.y3wEA90tdNv_c8LNeaeKnoHLj7Ep9xCgXAymMfjRHWk"}
+2024-02-07 07:31:07 INFO: System resources within normal parameters. CPU: 14.2%, Memory: 73.5%
+2024-02-07 07:31:07 INFO: Current MongoDB connections: 5
+2024-02-07 07:31:28 INFO: System resources within normal parameters. CPU: 10.6%, Memory: 73.4%
+2024-02-07 07:31:28 INFO: Current MongoDB connections: 6
+2024-02-07 07:31:49 INFO: System resources within normal parameters. CPU: 14.2%, Memory: 73.3%
+2024-02-07 07:31:49 INFO: Current MongoDB connections: 6
+2024-02-07 07:32:10 INFO: System resources within normal parameters. CPU: 31.7%, Memory: 73.8%
+2024-02-07 07:32:10 INFO: Current MongoDB connections: 6
+2024-02-07 07:32:31 INFO: System resources within normal parameters. CPU: 10.6%, Memory: 74.0%
+2024-02-07 07:32:31 INFO: Current MongoDB connections: 6
+2024-02-07 07:32:52 INFO: System resources within normal parameters. CPU: 9.3%, Memory: 73.3%
+2024-02-07 07:32:52 INFO: Current MongoDB connections: 6
+2024-02-07 07:33:13 INFO: System resources within normal parameters. CPU: 9.6%, Memory: 73.3%
+2024-02-07 07:33:13 INFO: Current MongoDB connections: 6
+2024-02-07 07:33:34 INFO: System resources within normal parameters. CPU: 10.2%, Memory: 73.4%
+2024-02-07 07:33:34 INFO: Current MongoDB connections: 6
+2024-02-07 07:33:55 INFO: System resources within normal parameters. CPU: 18.4%, Memory: 73.4%
+2024-02-07 07:33:55 INFO: Current MongoDB connections: 6
+2024-02-07 07:34:16 INFO: System resources within normal parameters. CPU: 28.4%, Memory: 73.5%
+2024-02-07 07:34:16 INFO: Current MongoDB connections: 6
+2024-02-07 07:34:37 INFO: System resources within normal parameters. CPU: 37.2%, Memory: 81.5%
+2024-02-07 07:34:37 INFO: Current MongoDB connections: 5
+2024-02-07 07:34:58 INFO: System resources within normal parameters. CPU: 29.7%, Memory: 81.4%
+2024-02-07 07:34:58 INFO: Current MongoDB connections: 6
+2024-02-07 07:35:19 INFO: System resources within normal parameters. CPU: 43.0%, Memory: 80.8%
+2024-02-07 07:35:19 INFO: Current MongoDB connections: 5
+2024-02-07 07:35:40 INFO: System resources within normal parameters. CPU: 40.9%, Memory: 81.3%
+2024-02-07 07:35:40 INFO: Current MongoDB connections: 6
+2024-02-07 07:36:01 INFO: System resources within normal parameters. CPU: 69.0%, Memory: 82.2%
+2024-02-07 07:36:01 INFO: Current MongoDB connections: 5
+2024-02-07 07:36:22 INFO: System resources within normal parameters. CPU: 53.2%, Memory: 81.5%
+2024-02-07 07:36:22 INFO: Current MongoDB connections: 6
+2024-02-07 07:36:43 INFO: System resources within normal parameters. CPU: 30.4%, Memory: 81.8%
+2024-02-07 07:36:43 INFO: Current MongoDB connections: 6
