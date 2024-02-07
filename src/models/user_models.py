@@ -33,3 +33,15 @@ class LoginRequestModel(BaseUserModel):
         example="SecurePassword123!",
         description="The user's password for login."
     )
+
+
+class LoginResponseModel(BaseModel):
+    access_token: str
+    token_type: str
+    refresh_token: str  # Added refresh token field
+
+
+class SignupResponseModel(BaseModel):
+    message: str
+    user: dict
+    # Define other fields as needed, ensuring sensitive information like passwords are excluded

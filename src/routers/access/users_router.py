@@ -2,9 +2,8 @@
 
 from fastapi import APIRouter, status, Response
 from src.controllers.access_controller import signup_user, login_user
-from src.models.user_models import SignupRequestModel, LoginRequestModel
-from src.schemas.signup_schema import SignupResponseModel 
-from src.schemas.login_schema import LoginResponseModel
+from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel
+
 
 users_router = APIRouter()
 
@@ -14,5 +13,5 @@ async def signup(signup_request: SignupRequestModel):
 
 @users_router.post("/login", response_model=LoginResponseModel)
 async def login(login_request: LoginRequestModel, response: Response):
-    result = await login_user(login_request)
-    return result
+    return await login_user(login_request)
+
