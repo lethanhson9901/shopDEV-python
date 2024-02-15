@@ -5,6 +5,7 @@ from typing import Optional
 import re
 from datetime import datetime
 from src.utils.role_permissions import Permission, Role
+from src.utils.security import PASSWORD_PATTERN
 
 class UserRole(str, Enum):
     SHOP_OWNER = "shop_owner"
@@ -80,7 +81,7 @@ class SignupRequestModel(BaseUserModel):
 
     @validator('password')
     def password_complexity_check(cls, v):
-        pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+        pattern = PASSWORD_PATTERN
         if not re.match(pattern, v):
             raise ValueError('Password must contain at least one letter, one number, and one special character')
         return v
@@ -125,6 +126,10 @@ class SignupResponseModel(BaseModel):
     role: UserRole  # Include the role to confirm the user's assigned role
 
 class ChangePasswordRequestModel(BaseModel):
+    user_email: EmailStr = Field(
+        ...,
+        description="The email address of the user requesting the password change."
+    )
     current_password: str = Field(
         ...,
         min_length=8,
@@ -142,11 +147,14 @@ class ChangePasswordRequestModel(BaseModel):
     
     @validator('new_password')
     def new_password_complexity_check(cls, v):
-        pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+        pattern = PASSWORD_PATTERN
         if not re.match(pattern, v):
             raise ValueError('New password must contain at least one letter, one number, and one special character')
         return v
 
+class ChangePasswordResponseModel(BaseModel):
+    message: str
+    
 class PasswordResetRequestModel(BaseModel):
     email: EmailStr = Field(
         ...,
@@ -170,7 +178,7 @@ class PasswordResetModel(BaseModel):
     
     @validator('new_password')
     def new_password_complexity_check(cls, v):
-        pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+        pattern = PASSWORD_PATTERN
         if not re.match(pattern, v):
             raise ValueError('New password must contain at least one letter, one number, and one special character')
         return v

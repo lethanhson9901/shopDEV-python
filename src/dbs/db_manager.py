@@ -59,6 +59,26 @@ class DBManager:
             self.logger.error(f"Error updating a user: {e}")
             raise
 
+    async def update_user_password(self, email: str, hashed_password: str) -> UpdateResult:
+        """
+        Update the password of a user in the database.
+
+        Parameters:
+        - email (str): The email of the user whose password is to be updated.
+        - hashed_password (str): The hashed new password to be set for the user.
+
+        Returns:
+        - UpdateResult: The result of the update operation.
+        """
+        try:
+            db_instance = await self.get_db()
+            result = await db_instance["users"].update_one({"email": email}, {"$set": {"password": hashed_password}})
+            return result
+        except Exception as e:
+            self.logger.error(f"Error updating user password: {e}")
+            raise
+
+
     @staticmethod
     def convert_objectid_to_str(item: dict) -> dict:
         """Convert ObjectId fields to a string for JSON serialization."""

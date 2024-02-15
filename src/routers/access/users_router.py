@@ -1,8 +1,8 @@
 # src/routers/access/user_router.py
 
 from fastapi import APIRouter, status, Response
-from src.controllers.access_controller import signup_user, login_user
-from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel
+from src.controllers.access_controller import signup_user, login_user, change_password
+from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
 
 
 users_router = APIRouter()
@@ -31,6 +31,7 @@ async def signup(signup_request: SignupRequestModel):
     """
     return await signup_user(signup_request)
 
+
 @users_router.post("/login", response_model=LoginResponseModel)
 async def login(login_request: LoginRequestModel, response: Response):
     """
@@ -49,3 +50,22 @@ async def login(login_request: LoginRequestModel, response: Response):
     return await login_user(login_request)
 
 
+@users_router.post("/change-password", response_model=LoginResponseModel)
+async def post_change_password(change_password_request: ChangePasswordRequestModel):
+    """
+    Change Password
+
+    Allows users to change their password by providing their current password and the new password. The new password must meet complexity requirements.
+
+    ### Request Body
+    - **user_email**: The email address of the user requesting the password change.
+    - **current_password**: The current password of the user.
+    - **new_password**: The new password for the user.
+
+    ### Responses
+    - **200 OK**: Password changed successfully.
+    - **400 Bad Request**: Invalid request data, such as missing required fields or validation failures.
+    - **401 Unauthorized**: Authentication failed due to incorrect current password.
+    - **500 Internal Server Error**: An unexpected error occurred during the password change process.
+    """
+    return await change_password(change_password_request)

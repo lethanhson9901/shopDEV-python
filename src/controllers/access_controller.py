@@ -20,16 +20,20 @@ async def login_user(login_request: LoginRequestModel) -> JSONResponse:
     return JSONResponse(status_code=result["status"], content=result)
 
 async def change_password(change_pwd_request: ChangePasswordRequestModel) -> JSONResponse:
-    """Updates the password for the authenticated user."""
+    """Updates the user's password."""
+    try:
+        # Call the update_password function with the provided parameters
+        result = await update_password(
+            email=change_pwd_request.user_email,
+            current_password=change_pwd_request.current_password,
+            new_password=change_pwd_request.new_password
+        )
+        # Return a success response
+        return JSONResponse(status_code=result["status"], content=result)
+    except HTTPException as e:
+        # If an HTTPException is raised, return the error response
+        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
+    except Exception as e:
+        # If any other unexpected exception occurs, return a 500 error response
+        return JSONResponse(status_code=500, content={"error": "An unexpected error occurred."})
 
-    # Check if the provided current password matches the stored password for the user
-    authentication_result = await authenticate_user(change_pwd_request.email, change_pwd_request.current_password)
-    if "error" in authentication_result:
-        raise HTTPException(status_code=authentication_result["status"], detail=authentication_result["error"])
-
-    # Update the password for the user
-    result = await update_password(change_pwd_request.email, change_pwd_request.new_password)
-    if "error" in result:
-        raise HTTPException(status_code=result["status"], detail=result["error"])
-
-    return JSONResponse(status_code=result["status"], content=result)

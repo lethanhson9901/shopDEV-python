@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 from src.configs.config import CurrentConfig
 from typing import Optional, Union
 
+# Define regular expression pattern for password complexity
+PASSWORD_PATTERN = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def hash_password(password: str) -> str:

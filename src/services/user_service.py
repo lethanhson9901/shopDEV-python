@@ -1,7 +1,7 @@
 # src/services/user_service.py
 
 from src.models.user_models import SignupRequestModel
-from src.utils.security import hash_password, verify_password, create_token
+from src.utils.security import hash_password, verify_password, create_token, PASSWORD_PATTERN
 from src.utils.email_reset import send_reset_email
 from src.dbs.db_manager import DBManager
 from fastapi import HTTPException
@@ -96,8 +96,7 @@ async def update_password(email: str, current_password: str, new_password: str) 
         raise HTTPException(status_code=401, detail="Incorrect email or current password")
     
     # Validate new password complexity
-    password_complexity_pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
-    if not re.match(password_complexity_pattern, new_password):
+    if not is_password_complex(new_password):
         raise HTTPException(status_code=400, detail="New password does not meet complexity requirements")
     
     # Hash new password
@@ -109,7 +108,20 @@ async def update_password(email: str, current_password: str, new_password: str) 
         return {"message": "Password updated successfully", "status": 200}
     except Exception as e:
         # Log the error or handle it appropriately
-        raise HTTPException(status_code=500, detail="An error occurred during the password update process")
+        raise HTTPException(status_code=500, detail="An error occurred during the password update process", error=e)
+
+def is_password_complex(password: str) -> bool:
+    """
+    Validates the complexity of the password.
+    
+    Parameters:
+    - password (str): The password to be validated.
+    
+    Returns:
+    - bool: True if the password meets complexity requirements, False otherwise.
+    """
+    pattern = PASSWORD_PATTERN
+    return bool(re.match(pattern, password))
 
 
 async def initiate_password_reset(email: str) -> dict:
