@@ -53,6 +53,10 @@ python3 server.py
 
 The server should start, and you'll be able to access the API at `http://localhost:3055`.
 
+## Remove all pycache
+
+find ./ -type d -name "__pycache__" -exec rm -r {} \;
+
 ## Running the Tests
 
 Explain how to run the automated tests for this system (if available).
@@ -92,4 +96,3 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * etc
 ```
 
-# find ./ -type d -name "__pycache__" -exec rm -r {} \;
