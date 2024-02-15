@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, status, Response
 from src.controllers.access_controller import signup_user, login_user
-from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel
+from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel
 
 
 users_router = APIRouter()
@@ -47,4 +47,5 @@ async def login(login_request: LoginRequestModel, response: Response):
     - **401 Unauthorized**: Authentication failed due to invalid credentials.
     """
     return await login_user(login_request)
+
 

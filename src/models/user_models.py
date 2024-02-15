@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, EmailStr, validator,  ValidationError
 from enum import Enum
 from typing import Optional
 import re
-from datetime import datetime, date
+from datetime import datetime
 from src.utils.role_permissions import Permission, Role
 
 class UserRole(str, Enum):
@@ -24,6 +24,17 @@ class BaseUserModel(BaseModel):
         example="user@gmail.com",
         description="The unique email address of the user."
     )
+    created_at: Optional[datetime] = Field(default=None, description="Timestamp when the user account was created.")
+    updated_at: Optional[datetime] = Field(default=None, description="Timestamp of the last update to the user account.")
+    
+    # Add a root validator to automatically set created_at and updated_at
+    @validator('created_at', 'updated_at', pre=True, always=True)
+    def default_datetime(cls, v, values, field):
+        if field.name == 'created_at' and not v:
+            return datetime.now()
+        if field.name == 'updated_at':
+            return datetime.now()
+        return v
 
 class SignupRequestModel(BaseUserModel):
     first_name: str = Field(
@@ -65,6 +76,7 @@ class SignupRequestModel(BaseUserModel):
         description="The role of the user.",
         example="customer"
     )
+
 
     @validator('password')
     def password_complexity_check(cls, v):
@@ -111,3 +123,54 @@ class SignupResponseModel(BaseModel):
     message: str
     user_id: str  # Securely reference the user without exposing sensitive data
     role: UserRole  # Include the role to confirm the user's assigned role
+
+class ChangePasswordRequestModel(BaseModel):
+    current_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="The current password of the user.",
+        example="CurrentPassword123!"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="The new password for the user. Must meet the complexity requirements.",
+        example="NewSecurePassword123!"
+    )
+    
+    @validator('new_password')
+    def new_password_complexity_check(cls, v):
+        pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+        if not re.match(pattern, v):
+            raise ValueError('New password must contain at least one letter, one number, and one special character')
+        return v
+
+class PasswordResetRequestModel(BaseModel):
+    email: EmailStr = Field(
+        ...,
+        example="user@example.com",
+        description="The email address of the user requesting a password reset."
+    )
+
+class PasswordResetModel(BaseModel):
+    reset_token: str = Field(
+        ...,
+        description="The password reset token provided to the user.",
+        example="reset_token_12345"
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="The new password for the user. Must meet the complexity requirements.",
+        example="ResetNewPassword123!"
+    )
+    
+    @validator('new_password')
+    def new_password_complexity_check(cls, v):
+        pattern = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+        if not re.match(pattern, v):
+            raise ValueError('New password must contain at least one letter, one number, and one special character')
+        return v
