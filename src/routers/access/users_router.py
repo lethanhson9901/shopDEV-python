@@ -27,6 +27,7 @@ async def signup(signup_request: SignupRequestModel):
     ### Responses
     - **201 Created**: Successfully created the user account. Returns the user ID and assigned role.
     - **400 Bad Request**: Invalid request data, such as missing required fields or validation failures.
+    - **409 Conflict**: The request could not be completed due to a conflict with the current state of the resource (user_id for example). 
     """
     return await signup_user(signup_request)
 
