@@ -1,7 +1,7 @@
 # src/routers/access/user_router.py
 
 from fastapi import APIRouter, status, Response
-from controllers.access_controller import signup_user, login_user
+from src.controllers.access_controller import signup_user, login_user
 from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel
 
 

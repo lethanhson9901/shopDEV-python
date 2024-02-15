@@ -24,6 +24,7 @@ global_logger = None  # Define a global variable for the logger instance
 # Define a list of paths to exclude from detailed logging
 EXCLUDED_PATHS = [
     "/api/v1/users/login",
+    "/docs"
     # Add more paths as needed
 ]
 
