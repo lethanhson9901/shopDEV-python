@@ -5,9 +5,23 @@ from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from src.configs.config import CurrentConfig
 from typing import Optional, Union
+import re
 
 # Define regular expression pattern for password complexity
 PASSWORD_PATTERN = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+
+def is_password_complex(password: str) -> bool:
+    """
+    Validates the complexity of the password.
+    
+    Parameters:
+    - password (str): The password to be validated.
+    
+    Returns:
+    - bool: True if the password meets complexity requirements, False otherwise.
+    """
+    pattern = PASSWORD_PATTERN
+    return bool(re.match(pattern, password))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

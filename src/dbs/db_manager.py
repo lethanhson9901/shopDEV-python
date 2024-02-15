@@ -5,6 +5,7 @@ from typing import Optional
 from pymongo.results import InsertOneResult, DeleteResult, UpdateResult
 from src.dbs.init_mongodb import Database
 from src.helpers.log_config import setup_logger
+from datetime import datetime
 
 class DBManager:
     # Class-level logger initialization
@@ -59,9 +60,9 @@ class DBManager:
             self.logger.error(f"Error updating a user: {e}")
             raise
 
-    async def update_user_password(self, email: str, hashed_password: str) -> UpdateResult:
+    async def update_user_password(self, email: str, hashed_password: str):
         """
-        Update the password of a user in the database.
+        Update the password of a user in the database, and refresh the updated_at timestamp.
 
         Parameters:
         - email (str): The email of the user whose password is to be updated.
@@ -72,7 +73,12 @@ class DBManager:
         """
         try:
             db_instance = await self.get_db()
-            result = await db_instance["users"].update_one({"email": email}, {"$set": {"password": hashed_password}})
+            current_time = datetime.now()  # Capture the current time
+            # Update both the password and the updated_at field in one operation
+            result = await db_instance["users"].update_one(
+                {"email": email},
+                {"$set": {"password": hashed_password, "updated_at": current_time}}
+            )
             return result
         except Exception as e:
             self.logger.error(f"Error updating user password: {e}")
