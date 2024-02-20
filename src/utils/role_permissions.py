@@ -1,3 +1,5 @@
+# src/utils/role_permissions.py
+
 from enum import Enum, auto
 
 class Permission(Enum):
@@ -6,21 +8,26 @@ class Permission(Enum):
     EDIT_ITEM = auto()
     DELETE_ITEM = auto()
     VIEW_ITEM = auto()
-    MANAGE_USERS = auto()  # Permission to add, remove, or modify user roles
-    VIEW_AUDIT_LOGS = auto()  # Permission to view audit logs for security or operational purposes
-    MODIFY_SETTINGS = auto()  # Permission to change application settings
-    # Extend with additional permissions as needed
+    MANAGE_USERS = auto()
+    VIEW_AUDIT_LOGS = auto()
+    MODIFY_SETTINGS = auto()
+    MANAGE_INVENTORY = auto()  # New permission for managing inventory details
+    PROCESS_ORDERS = auto()  # New permission for processing customer orders
+    ACCESS_REPORTS = auto()  # New permission for accessing various reports
 
 class Role(Enum):
     """Defines roles and their associated permissions."""
     SHOP_OWNER = {Permission.CREATE_ITEM, Permission.EDIT_ITEM, Permission.DELETE_ITEM, Permission.VIEW_ITEM}
     CUSTOMER = {Permission.VIEW_ITEM}
+    SHOP_MANAGER = {
+        Permission.VIEW_ITEM, Permission.MANAGE_INVENTORY, Permission.PROCESS_ORDERS
+    }  # New role
     ADMIN = {
         Permission.CREATE_ITEM, Permission.EDIT_ITEM, Permission.DELETE_ITEM, 
         Permission.VIEW_ITEM, Permission.MANAGE_USERS, Permission.VIEW_AUDIT_LOGS, 
-        Permission.MODIFY_SETTINGS
+        Permission.MODIFY_SETTINGS, Permission.MANAGE_INVENTORY, Permission.PROCESS_ORDERS,
+        Permission.ACCESS_REPORTS
     }
-    # Add more roles with their respective permissions here
 
 def check_permission(role: Role, permission: Permission) -> bool:
     """

@@ -11,12 +11,14 @@ class UserRole(str, Enum):
     SHOP_OWNER = "shop_owner"
     CUSTOMER = "customer"
     ADMIN = "admin"
-
+    SHOP_MANAGER = "shop_manager"  # New role
+    
 # Map UserRole to Role with permissions
 ROLE_PERMISSION_MAP = {
     UserRole.SHOP_OWNER: Role.SHOP_OWNER,
     UserRole.CUSTOMER: Role.CUSTOMER,
-    UserRole.ADMIN: Role.ADMIN,  # Assuming ADMIN has all permissions or specific ones
+    UserRole.ADMIN: Role.ADMIN,
+    UserRole.SHOP_MANAGER: Role.SHOP_MANAGER,  # Mapping the new role
 }
 
 class BaseUserModel(BaseModel):

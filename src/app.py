@@ -7,6 +7,8 @@ import asyncio
 from src.dbs.init_mongodb import Database, start_monitoring
 from src.helpers.log_config import setup_logger, log_requests, scheduled_cleanup
 from src.routers.api_v1_router import api_v1_router
+from contextlib import asynccontextmanager
+import os
 
 app = FastAPI(title='Python-Dev API', description='A sample FastAPI application.', version='1.0.0')
 
@@ -34,18 +36,36 @@ def include_routers(application: FastAPI):
     """Include application routers."""
     application.include_router(api_v1_router, prefix="/api/v1")
 
-@app.on_event("startup")
-async def startup_event():
-    """Application startup: connect to the database, start background tasks."""
+# @app.on_event("startup")
+# async def startup_event():
+#     """Application startup: connect to the database, start background tasks."""
+#     await db_instance.connect()
+#     asyncio.create_task(start_monitoring())
+#     logs_dir = 'logs'  # Ensure this directory exists or is created
+#     asyncio.create_task(scheduled_cleanup(logs_dir, 30))  # Cleanup interval as needed
+
+# @app.on_event("shutdown")
+# async def shutdown_event():
+#     """Application shutdown: disconnect from the database."""
+#     await db_instance.disconnect()
+
+@asynccontextmanager
+async def app_lifespan(app):
+    # Application startup logic
     await db_instance.connect()
     asyncio.create_task(start_monitoring())
-    logs_dir = 'logs'  # Ensure this directory exists or is created
-    asyncio.create_task(scheduled_cleanup(logs_dir, 30))  # Cleanup interval as needed
+    logs_dir = 'logs'
+    if not os.path.exists(logs_dir):
+        os.makedirs(logs_dir)
+    asyncio.create_task(scheduled_cleanup(logs_dir, 30))
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Application shutdown: disconnect from the database."""
+    yield  # Yield control back to FastAPI until shutdown
+
+    # Application shutdown logic
     await db_instance.disconnect()
+
+# Assign the lifespan context manager to the FastAPI app
+app.router.lifespan_context = app_lifespan
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):

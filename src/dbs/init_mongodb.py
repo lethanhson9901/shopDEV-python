@@ -2,33 +2,58 @@
 
 from src.helpers.check_connect import monitor_system_resources
 from motor.motor_asyncio import AsyncIOMotorClient
-from src.configs.config import CurrentConfig  # Ensure this import matches your project structure
+from src.configs.config import CurrentConfig
 import asyncio
 from src.helpers.log_config import setup_logger
 
 class Database:
+    """
+    Singleton class for managing the database connection to MongoDB asynchronously.
+
+    Attributes:
+        _instance (Database): The singleton instance of the Database class.
+        _is_connected (bool): Flag to indicate if the connection to MongoDB is established.
+        _lock (asyncio.Lock): Lock for thread-safe operations in asynchronous context.
+        logger (logging.Logger): Logger for logging database connection activities.
+
+    Methods:
+        get_instance: Class method to get the singleton instance of the Database class.
+        connect: Asynchronously establishes a connection to MongoDB.
+        disconnect: Asynchronously closes the connection to MongoDB.
+        get_db: Returns the database connection if connected, otherwise attempts to connect first.
+    """
+
     _instance = None
     _is_connected = False
-    _lock = asyncio.Lock()  # Correctly used for async operations
+    _lock = asyncio.Lock()
     logger = setup_logger()
 
     @classmethod
     async def get_instance(cls):
+        """
+        Gets the singleton instance of the Database class, creating it if necessary.
+
+        Returns:
+            The singleton instance of the Database class.
+        """
         async with cls._lock:
             if cls._instance is None:
                 cls._instance = super(Database, cls).__new__(cls)
-                # Initialize it here to avoid recursion with __init__
-                cls._instance._init()
+                cls._instance._init()  # Initialize the instance
             return cls._instance
 
     def _init(self):
-        """A substitute for __init__, to initialize the instance."""
-        if not hasattr(self, '_initialized'):  # Prevent reinitialization
+        """Initializes the Database instance; a substitute for __init__."""
+        if not hasattr(self, '_initialized'):  # Prevent re-initialization
             self._client = None
             self._db = None
             self._initialized = True
 
     async def connect(self):
+        """
+        Asynchronously establishes a connection to MongoDB using the configuration
+        specified in CurrentConfig.
+        """
         async with self._lock:
             if not self._is_connected:
                 try:
@@ -45,6 +70,9 @@ class Database:
                     self._is_connected = False
 
     async def disconnect(self):
+        """
+        Asynchronously closes the MongoDB connection.
+        """
         async with self._lock:
             if self._is_connected and self._client is not None:
                 self._client.close()
@@ -52,10 +80,18 @@ class Database:
                 self.logger.info("Disconnected from MongoDB")
 
     async def get_db(self):
+        """
+        Returns the MongoDB database connection, establishing it if necessary.
+
+        Returns:
+            The MongoDB database connection.
+        """
         if not self._is_connected:
             await self.connect()
         return self._db
 
-
 async def start_monitoring():
+    """
+    Starts the system resource monitoring process asynchronously.
+    """
     await monitor_system_resources()
