@@ -4,3 +4,4 @@ __pycache__/
 
 # Ignore all files in the logs folder
 logs/*
+# keys/*

@@ -1,77 +1,130 @@
-# src/utils/security.py
-
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-from datetime import datetime, timedelta
-from src.configs.config import CurrentConfig
-from typing import Optional, Union
+import os
 import re
+from datetime import datetime, timedelta
+from typing import Optional, Union
+from dotenv import load_dotenv
+from jose import jwt, JWTError
+from passlib.context import CryptContext
+from src.configs.config import CurrentConfig
 
-# Define regular expression pattern for password complexity
-PASSWORD_PATTERN = r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+# Load environment variables from .env file
+load_dotenv()
+
+# Pre-compile the regular expression pattern for password complexity
+# to improve performance.
+PASSWORD_PATTERN = re.compile(
+    r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$'
+)
+
+# Initialize the password context for hashing and verifying passwords
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def is_password_complex(password: str) -> bool:
     """
-    Validates the complexity of the password.
+    Validates the complexity of a password against a predefined pattern.
     
     Parameters:
-    - password (str): The password to be validated.
+    - password (str): The password to validate.
     
     Returns:
-    - bool: True if the password meets complexity requirements, False otherwise.
+    - bool: True if the password meets the complexity requirements, 
+            False otherwise.
     """
-    pattern = PASSWORD_PATTERN
-    return bool(re.match(pattern, password))
+    return bool(PASSWORD_PATTERN.match(password))
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 async def hash_password(password: str) -> str:
-    """Asynchronously hashes a password using bcrypt."""
+    """
+    Asynchronously hashes a password using bcrypt.
+    
+    Parameters:
+    - password (str): The password to hash.
+    
+    Returns:
+    - str: The hashed password.
+    """
     return pwd_context.hash(password)
 
+
 async def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Asynchronously verifies a plain password against its hashed counterpart."""
+    """
+    Asynchronously verifies a plain password against its hashed version.
+    
+    Parameters:
+    - plain_password (str): The plain text password to verify.
+    - hashed_password (str): The hashed password to compare against.
+    
+    Returns:
+    - bool: True if the verification is successful, False otherwise.
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_token(data: dict, expires_delta: Optional[timedelta] = None, is_refresh_token: bool = False) -> str:
-    """Creates a JWT token. Use is_refresh_token=True to generate a refresh token.
-    
-    Args:
-        data (dict): The payload data for the token.
-        expires_delta (Optional[timedelta]): The expiration delta from the current time.
-        is_refresh_token (bool): Flag to indicate if the token is a refresh token.
 
-    Returns:
-        str: The encoded JWT token.
+def get_jwt_secret_key() -> str:
     """
-    secret_key = CurrentConfig.SECRET_KEY
-    algorithm = CurrentConfig.ALGORITHM
-    expire_minutes = CurrentConfig.REFRESH_TOKEN_EXPIRE_MINUTES if is_refresh_token else CurrentConfig.ACCESS_TOKEN_EXPIRE_MINUTES
-    expire = datetime.utcnow() + (expires_delta if expires_delta else timedelta(minutes=expire_minutes))
+    Retrieves the appropriate secret key for JWT operations based on
+    the configured algorithm. Adjusted to ensure RSA keys are returned
+    in PEM format as a string.
+    
+    Returns:
+    - str: The secret key or private key for JWT encoding.
+    """
+    if CurrentConfig.ALGORITHM in ["RS256", "ES256"]:
+        # Assuming you adjust CurrentConfig.load_private_key() to return
+        # the PEM-encoded string directly
+        return CurrentConfig.load_private_key()
+    else:
+        return CurrentConfig.PRIVATE_KEY
+
+
+
+def create_token(data: dict, 
+                 expires_delta: Optional[timedelta] = None,
+                 is_refresh_token: bool = False) -> str:
+    """
+    Creates a JWT token with optional expiration and refresh capabilities.
+    
+    Parameters:
+    - data (dict): The payload data for the token.
+    - expires_delta (Optional[timedelta]): Optional expiration delta from now.
+    - is_refresh_token (bool): Indicates if the token is a refresh token.
+    
+    Returns:
+    - str: The encoded JWT token.
+    """
+    expire_minutes = (CurrentConfig.REFRESH_TOKEN_EXPIRE_MINUTES
+                      if is_refresh_token
+                      else CurrentConfig.ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + (expires_delta or 
+                                   timedelta(minutes=expire_minutes))
     to_encode = data.copy()
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, secret_key, algorithm)
+    return jwt.encode(to_encode, get_jwt_secret_key(),
+                      algorithm=CurrentConfig.ALGORITHM)
+
 
 async def refresh_access_token(refresh_token: str) -> Union[dict, None]:
-    """Verifies a refresh token and returns a new access token, handling exceptions for security.
+    """
+    Verifies a refresh token and returns a new access token if valid.
     
-    Args:
-        refresh_token (str): The refresh token to validate and use for generating a new access token.
+    Parameters:
+    - refresh_token (str): The refresh token to validate and use.
     
     Returns:
-        Union[dict, None]: A new access token or None if the refresh token is invalid.
+    - Union[dict, None]: A new access token dictionary or None if invalid.
     
     Raises:
-        ValueError: If the refresh token is invalid or the user ID is not found.
+    - ValueError: If the refresh token is invalid or user ID is not found.
     """
     try:
-        payload = jwt.decode(refresh_token, CurrentConfig.SECRET_KEY, algorithms=[CurrentConfig.ALGORITHM])
-        user_id = payload.get("sub")  # Assuming 'sub' contains the user identifier.
-        if user_id is None:
-            raise ValueError("User ID not found in refresh token.")  # Specific exception.
-
-        # Optionally, add logic here to verify the refresh token's validity against a database.
-        new_access_token = create_token(data={"sub": user_id}, is_refresh_token=False)
-        return {"access_token": new_access_token, "token_type": "bearer"}
+        payload = jwt.decode(refresh_token, get_jwt_secret_key(),
+                             algorithms=[CurrentConfig.ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id:
+            raise ValueError("User ID not found in refresh token.")
+        return {"access_token": create_token({"sub": user_id},
+                                              is_refresh_token=False),
+                "token_type": "bearer"}
     except JWTError as e:
-        raise ValueError(f"Invalid refresh token: {e}")  # More specific exception.
+        raise ValueError(f"Invalid refresh token: {e}")

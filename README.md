@@ -45,7 +45,7 @@ Adjust the connection string if you have a different configuration.
 
 4. **Run the Application**
 
-To start the server, navigate to the project directory and run:
+To start the server, navigate to the project directory and run: (I'm using Python 3.10.12)
 
 ```bash
 python3 server.py
