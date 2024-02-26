@@ -79,7 +79,21 @@ def get_jwt_secret_key() -> str:
     else:
         return CurrentConfig.PRIVATE_KEY
 
-
+def get_jwt_public_key() -> str:
+    """
+    Retrieves the appropriate secret key for JWT operations based on
+    the configured algorithm. Adjusted to ensure RSA keys are returned
+    in PEM format as a string.
+    
+    Returns:
+    - str: The secret key or public key for JWT encoding.
+    """
+    if CurrentConfig.ALGORITHM in ["RS256", "ES256"]:
+        # Assuming you adjust CurrentConfig.load_public_key() to return
+        # the PEM-encoded string directly
+        return CurrentConfig.load_public_key()
+    else:
+        return CurrentConfig.PUBLIC_KEY
 
 def create_token(data: dict, 
                  expires_delta: Optional[timedelta] = None,

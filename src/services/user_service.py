@@ -3,16 +3,16 @@
 from src.models.user_models import SignupRequestModel
 from src.dbs.key_db_manager import KeyDBManager
 from src.utils.security import (
-    hash_password, verify_password, create_token, is_password_complex
+    hash_password, verify_password, create_token, is_password_complex, get_jwt_public_key, get_jwt_secret_key
 )
 from src.utils.email_reset import send_reset_email
 from src.dbs.user_db_manager import UserDBManager
 from bson import ObjectId
 from datetime import datetime
-import re
+from typing import Dict
 from src.core.success_response_handler import SuccessResponseHandler
 from src.core.user_error_response_handler import UserErrorResponseHandler
-from src.configs.config import CurrentConfig
+# from src.configs.config import CurrentConfig
 
 user_db_manager = UserDBManager()
 key_db_manager = KeyDBManager()
@@ -55,42 +55,54 @@ async def register_user(signup_request: SignupRequestModel) -> dict:
 
     return SuccessResponseHandler.user_registered(user_response_data)
 
-async def authenticate_user(email: str, password: str) -> dict:
+async def authenticate_user(email: str, password: str) -> Dict[str, str]:
     """
-    Authenticates a user with the given email and password.
+    Authenticates a user based on the provided email and password.
+
+    Asynchronously verifies user credentials against the database, generates access
+    and refresh tokens, and saves key information. If authentication is successful,
+    returns the tokens and user role.
 
     Parameters:
-    - email: The user's email address.
-    - password: The user's password.
+    - email (str): The user's email address.
+    - password (str): The user's password.
 
     Returns:
-    - A dictionary containing the access and refresh tokens along with the user's role.
+    - dict: A dictionary containing 'access_token', 'refresh_token', and 'user_role'.
 
     Raises:
-    - Raises an error response if the email or password is incorrect.
+    - UserErrorResponse: If the email or password is incorrect.
     """
+    # Attempt to find the user by email
     user = await user_db_manager.find_user_by_email(email)
     if not user or not await verify_password(password, user['password']):
+        # Handle incorrect email or password error
         UserErrorResponseHandler.incorrect_email_or_password()
 
+    # Generate tokens
     access_token = create_token(data={"sub": user["email"]}, is_refresh_token=False)
     refresh_token = create_token(data={"sub": user["email"]}, is_refresh_token=True)
     
-    public_key = CurrentConfig.load_public_key()
-    private_key = CurrentConfig.load_private_key()
+    # Load key configuration
+    public_key = get_jwt_public_key()
+    private_key = get_jwt_secret_key()
 
-    # Save key information here
+    # Save key information asynchronously
     await key_db_manager.save_key_information(
         user_id=str(user["_id"]),
         refresh_token=refresh_token,
-        public_key=public_key,  # Replace None with actual public key if available
-        private_key=private_key   # Replace None with actual private key if available
+        public_key=public_key,  # Assumes public_key is correctly loaded
+        private_key=private_key  # Assumes private_key is correctly loaded
     )
     
+    # Retrieve or default user role
     user_role = user.get('role', 'Unknown')
 
+    # Return successful authentication response
     return SuccessResponseHandler.user_authenticated(
-        access_token, refresh_token, user_role
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_role=user_role
     )
 
 async def update_password(email: str, current_password: str, new_password: str) -> dict:
