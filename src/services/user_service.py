@@ -1,6 +1,7 @@
 # src/services/user_service.py
 
 from src.models.user_models import SignupRequestModel
+from src.dbs.key_db_manager import KeyDBManager
 from src.utils.security import (
     hash_password, verify_password, create_token, is_password_complex
 )
@@ -11,8 +12,10 @@ from datetime import datetime
 import re
 from src.core.success_response_handler import SuccessResponseHandler
 from src.core.user_error_response_handler import UserErrorResponseHandler
+from src.configs.config import CurrentConfig
 
 user_db_manager = UserDBManager()
+key_db_manager = KeyDBManager()
 
 async def register_user(signup_request: SignupRequestModel) -> dict:
     """
@@ -72,6 +75,18 @@ async def authenticate_user(email: str, password: str) -> dict:
 
     access_token = create_token(data={"sub": user["email"]}, is_refresh_token=False)
     refresh_token = create_token(data={"sub": user["email"]}, is_refresh_token=True)
+    
+    public_key = CurrentConfig.load_public_key()
+    private_key = CurrentConfig.load_private_key()
+
+    # Save key information here
+    await key_db_manager.save_key_information(
+        user_id=str(user["_id"]),
+        refresh_token=refresh_token,
+        public_key=public_key,  # Replace None with actual public key if available
+        private_key=private_key   # Replace None with actual private key if available
+    )
+    
     user_role = user.get('role', 'Unknown')
 
     return SuccessResponseHandler.user_authenticated(

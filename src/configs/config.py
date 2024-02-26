@@ -1,3 +1,4 @@
+# src/configs/config.py
 import os
 from dotenv import load_dotenv
 from cryptography.hazmat.backends import default_backend
