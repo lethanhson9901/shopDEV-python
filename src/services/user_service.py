@@ -3,7 +3,7 @@
 from src.models.user_models import SignupRequestModel
 from src.dbs.key_db_manager import KeyDBManager
 from src.utils.security import (
-    hash_password, verify_password, create_token, is_password_complex, get_jwt_public_key, get_jwt_secret_key
+    JWTError, hash_password, verify_password, create_token, decode_refresh_token, is_password_complex, get_jwt_public_key, get_jwt_secret_key
 )
 from src.utils.email_reset import send_reset_email
 from src.dbs.user_db_manager import UserDBManager
@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import Dict
 from src.core.success_response_handler import SuccessResponseHandler
 from src.core.user_error_response_handler import UserErrorResponseHandler
-# from src.configs.config import CurrentConfig
 
 user_db_manager = UserDBManager()
 key_db_manager = KeyDBManager()
@@ -104,6 +103,46 @@ async def authenticate_user(email: str, password: str) -> Dict[str, str]:
         refresh_token=refresh_token,
         user_role=user_role
     )
+
+async def renew_access_token(refresh_token: str) -> Dict[str, str]:
+    """
+    Validates a refresh token and returns a new access token if valid.
+
+    Parameters:
+    - refresh_token (str): The refresh token to validate.
+
+    Returns:
+    - dict: A dictionary containing the new 'access_token' and 'user_role' if the refresh token is valid.
+
+    Raises:
+    - UserErrorResponse: If the refresh token is invalid or expired.
+    """
+    try:
+        payload = decode_refresh_token(refresh_token)
+        user_email = payload.get("sub")
+
+        if not user_email:
+            return UserErrorResponseHandler.invalid_token()
+
+        user = await user_db_manager.find_user_by_email(user_email)
+        if not user:
+            return UserErrorResponseHandler.user_not_found()
+
+        user_id = str(user.get('_id'))
+        key_info = await key_db_manager.find_key_information(user_id)
+
+        if not key_info or refresh_token not in key_info.get("refresh_tokens_used", []):
+            return UserErrorResponseHandler.invalid_token()
+
+        new_access_token = create_token(data={"sub": user_id}, is_refresh_token=False)
+        user_role = user.get('role', 'Unknown')
+
+        # Directly return the expected fields without wrapping in a 'data' dictionary
+        return SuccessResponseHandler.renewed_access_token(access_token=new_access_token, 
+                                                           role=user_role)
+
+    except JWTError as e:
+        return UserErrorResponseHandler.invalid_token(message=str(e))
 
 async def update_password(email: str, current_password: str, new_password: str) -> dict:
     """

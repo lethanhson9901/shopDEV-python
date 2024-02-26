@@ -184,3 +184,23 @@ class PasswordResetModel(BaseModel):
         if not re.match(pattern, v):
             raise ValueError('New password must contain at least one letter, one number, and one special character')
         return v
+
+class RefreshTokenRequestModel(BaseModel):
+    refresh_token: str = Field(
+        ...,
+        description="The refresh token to be renewed."
+    )
+
+class RenewAccessTokenResponseModel(BaseModel):
+    access_token: str = Field(
+        ...,
+        description="The newly generated JWT access token."
+    )
+    token_type: str = Field(
+        default="bearer",
+        description="The type of the token issued."
+    )
+    role: UserRole = Field(
+        ...,
+        description="The role of the user associated with the access token."
+    )

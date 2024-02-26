@@ -56,3 +56,21 @@ class KeyDBManager(BaseDBManager):
             self.logger.error(f"Error saving key information for user {user_id}: {e}")
             return False
 
+    async def find_key_information(self, user_id: str):
+        """
+        Retrieves key information for a specific user.
+
+        Parameters:
+        - user_id (str): The unique identifier for the user.
+
+        Returns:
+        - dict: The key information if found, None otherwise.
+        """
+        try:
+            db = await self.get_db()
+            # Ensure to match the user_id as a string, as stored in the database
+            key_info = await db.keys.find_one({"user_id": user_id})
+            return key_info
+        except Exception as e:
+            self.logger.error(f"Error retrieving key information for user {user_id}: {e}")
+            return None

@@ -120,27 +120,32 @@ def create_token(data: dict,
                       algorithm=CurrentConfig.ALGORITHM)
 
 
-async def refresh_access_token(refresh_token: str) -> Union[dict, None]:
+def decode_refresh_token(refresh_token: str) -> dict:
     """
-    Verifies a refresh token and returns a new access token if valid.
-    
+    Decodes a JWT refresh token and validates its integrity, supporting RS256, ES256, and HS256 algorithms.
+
     Parameters:
-    - refresh_token (str): The refresh token to validate and use.
-    
+    - refresh_token (str): The JWT refresh token to decode and validate.
+
     Returns:
-    - Union[dict, None]: A new access token dictionary or None if invalid.
-    
+    - dict: The payload of the decoded JWT refresh token if valid.
+
     Raises:
-    - ValueError: If the refresh token is invalid or user ID is not found.
+    - JWTError: If the token is invalid or expired.
     """
     try:
-        payload = jwt.decode(refresh_token, get_jwt_secret_key(),
-                             algorithms=[CurrentConfig.ALGORITHM])
-        user_id = payload.get("sub")
-        if not user_id:
-            raise ValueError("User ID not found in refresh token.")
-        return {"access_token": create_token({"sub": user_id},
-                                              is_refresh_token=False),
-                "token_type": "bearer"}
+        # Determine the appropriate key based on the algorithm
+        if CurrentConfig.ALGORITHM in ["RS256", "ES256"]:
+            key = get_jwt_public_key()  # Use the public key for RSA and ECDSA
+        elif CurrentConfig.ALGORITHM == "HS256":
+            key = get_jwt_secret_key()  # Use the secret key for HMAC
+        else:
+            raise ValueError(f"Unsupported JWT algorithm: {CurrentConfig.ALGORITHM}")
+
+        # Decode the token with the selected key
+        payload = jwt.decode(refresh_token, key, algorithms=[CurrentConfig.ALGORITHM])
+        return payload
     except JWTError as e:
-        raise ValueError(f"Invalid refresh token: {e}")
+        raise JWTError(f"Invalid or expired refresh token: {e}")
+    except ValueError as e:
+        raise ValueError(str(e))

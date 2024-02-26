@@ -2,8 +2,8 @@
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from src.models.user_models import SignupRequestModel, LoginRequestModel, ChangePasswordRequestModel
-from src.services.user_service import register_user, authenticate_user, update_password
+from src.models.user_models import SignupRequestModel, LoginRequestModel, RenewAccessTokenResponseModel, RefreshTokenRequestModel, ChangePasswordRequestModel
+from src.services.user_service import register_user, authenticate_user, renew_access_token, update_password
 
 async def signup_user(signup_request: SignupRequestModel) -> JSONResponse:
     """Registers a new user with the given signup request data."""
@@ -37,3 +37,17 @@ async def change_password(change_pwd_request: ChangePasswordRequestModel) -> JSO
         # If any other unexpected exception occurs, return a 500 error response
         return JSONResponse(status_code=500, content={"error": "An unexpected error occurred."})
 
+
+async def refresh_access_token_endpoint(refresh_request: RefreshTokenRequestModel) -> RenewAccessTokenResponseModel:
+    """
+    Receives a refresh token and returns a new access token if the refresh token is valid.
+    """
+    try:
+        result = await renew_access_token(refresh_request.refresh_token)
+        if "error" in result:
+            raise HTTPException(status_code=result["status"], detail=result["error"])
+        return result
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")

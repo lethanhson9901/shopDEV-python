@@ -107,4 +107,22 @@ class SuccessResponseHandler:
             "status": 200
         }
 
-    # This class can be extended with more specific success response methods as needed.
+    @staticmethod
+    def renewed_access_token(access_token: str, role: str) -> dict:
+        """
+        Success response for renewing an access token.
+
+        Parameters:
+        - access_token (str): The newly generated JWT access token.
+        - role (str): The role of the user associated with the access token.
+
+        Returns:
+        - dict: A dictionary containing the access token, token type, and user role.
+        """
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "role": role,
+            "message": "Access token renewed successfully",
+            "status": 200
+        }

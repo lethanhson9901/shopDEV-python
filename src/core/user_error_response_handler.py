@@ -1,4 +1,5 @@
 # src/core/user_error_response_handler.py
+
 from src.core.error_response_handler import ErrorResponseHandler
 
 class UserErrorResponseHandler(ErrorResponseHandler):
@@ -30,3 +31,18 @@ class UserErrorResponseHandler(ErrorResponseHandler):
     def password_reset_failed():
         return ErrorResponseHandler.raise_http_exception(
             status_code=500, detail="Failed to send password reset email")
+
+    @staticmethod
+    def invalid_token(message="Invalid or expired token"):
+        """
+        Raises an HTTP exception for invalid or expired tokens.
+
+        Parameters:
+        - message (str): Custom message detailing the error.
+
+        Returns:
+        - Raises an HTTP exception with a 401 status code.
+        """
+        return ErrorResponseHandler.raise_http_exception(
+            status_code=401, detail=message)
+

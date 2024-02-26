@@ -1,8 +1,8 @@
 # src/routers/access/user_router.py
 
-from fastapi import APIRouter, status, Response
-from src.controllers.access_controller import signup_user, login_user, change_password
-from src.models.user_models import SignupRequestModel, LoginRequestModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
+from fastapi import APIRouter, status, Response, HTTPException
+from src.controllers.access_controller import signup_user, login_user, refresh_access_token_endpoint, change_password
+from src.models.user_models import SignupRequestModel, LoginRequestModel, RefreshTokenRequestModel, RenewAccessTokenResponseModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
 
 
 users_router = APIRouter()
@@ -69,3 +69,22 @@ async def post_change_password(change_password_request: ChangePasswordRequestMod
     - **500 Internal Server Error**: An unexpected error occurred during the password change process.
     """
     return await change_password(change_password_request)
+
+@users_router.post("/token/refresh", response_model=RenewAccessTokenResponseModel, status_code=status.HTTP_200_OK)
+async def refresh_token(refresh_request: RefreshTokenRequestModel):
+    """
+    Refresh Access Token
+
+    Allows users to obtain a new access token using a valid refresh token. Ensures continuous access to protected resources without re-authentication.
+
+    ### Request Body
+    - **refresh_token**: The refresh token issued to the user upon login or previous token refresh.
+
+    ### Responses
+    - **200 OK**: Successfully refreshed the access token. Returns the new access token.
+    - **401 Unauthorized**: Failed to refresh the access token due to an invalid or expired refresh token.
+    """
+    try:
+        return await refresh_access_token_endpoint(refresh_request)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
