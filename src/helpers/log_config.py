@@ -190,7 +190,7 @@ async def log_requests(request: Request, call_next):
         logger.warning(f"HTTP exception: {e.detail} - Status: {e.status_code}")
         return JSONResponse(status_code=e.status_code, content={"message": e.detail})
     except Exception as e:
-        logger.error(f"Unhandled exception: {str(e)}")
+        logger.error(f"Unhandled exceptions: {str(e)}")
         return JSONResponse(status_code=500, content={"message": "Internal Server Error"})
 
     process_time = time.time() - start_time

@@ -1,5 +1,5 @@
 # src/app.py
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from brotli_asgi import BrotliMiddleware
@@ -7,10 +7,15 @@ import asyncio
 from src.dbs.init_mongodb import Database, start_monitoring
 from src.helpers.log_config import setup_logger, log_requests, scheduled_cleanup
 from src.routers.api_v1_router import api_v1_router
+from src.auth.authentication_middleware import jwt_authentication_middleware
 from contextlib import asynccontextmanager
 import os
 
 app = FastAPI(title='Python-Dev API', description='A sample FastAPI application.', version='1.0.0')
+
+@app.get("/protected-route")
+async def protected_route(user_info: dict = Depends(jwt_authentication_middleware)):
+    return {"message": "You are authenticated", "user_info": user_info}
 
 logger = setup_logger()
 

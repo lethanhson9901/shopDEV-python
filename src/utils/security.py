@@ -120,15 +120,16 @@ def create_token(data: dict,
                       algorithm=CurrentConfig.ALGORITHM)
 
 
-def decode_refresh_token(refresh_token: str) -> dict:
+async def decode_token(token: str) -> dict:
     """
-    Decodes a JWT refresh token and validates its integrity, supporting RS256, ES256, and HS256 algorithms.
+    Decodes a JWT token (either access or refresh) and validates its integrity,
+    supporting RS256, ES256, and HS256 algorithms.
 
     Parameters:
-    - refresh_token (str): The JWT refresh token to decode and validate.
+    - token (str): The JWT token to decode and validate.
 
     Returns:
-    - dict: The payload of the decoded JWT refresh token if valid.
+    - dict: The payload of the decoded JWT token if valid.
 
     Raises:
     - JWTError: If the token is invalid or expired.
@@ -143,9 +144,9 @@ def decode_refresh_token(refresh_token: str) -> dict:
             raise ValueError(f"Unsupported JWT algorithm: {CurrentConfig.ALGORITHM}")
 
         # Decode the token with the selected key
-        payload = jwt.decode(refresh_token, key, algorithms=[CurrentConfig.ALGORITHM])
+        payload = jwt.decode(token, key, algorithms=[CurrentConfig.ALGORITHM])
         return payload
     except JWTError as e:
-        raise JWTError(f"Invalid or expired refresh token: {e}")
+        raise JWTError(f"Invalid or expired token: {e}")
     except ValueError as e:
         raise ValueError(str(e))

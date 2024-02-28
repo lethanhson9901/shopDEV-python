@@ -1,9 +1,9 @@
 # src/routers/access/user_router.py
 
-from fastapi import APIRouter, status, Response, HTTPException
+from fastapi import APIRouter, status, Response, HTTPException, Depends
 from src.controllers.access_controller import signup_user, login_user, refresh_access_token_endpoint, change_password
 from src.models.user_models import SignupRequestModel, LoginRequestModel, RefreshTokenRequestModel, RenewAccessTokenResponseModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
-
+from src.auth.authentication_middleware import jwt_authentication_middleware
 
 users_router = APIRouter()
 
@@ -88,3 +88,4 @@ async def refresh_token(refresh_request: RefreshTokenRequestModel):
         return await refresh_access_token_endpoint(refresh_request)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    

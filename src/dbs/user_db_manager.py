@@ -4,11 +4,30 @@ from typing import Optional
 from src.dbs.base_db_manager import BaseDBManager
 from pymongo.results import InsertOneResult, DeleteResult, UpdateResult
 from datetime import datetime
+from bson import ObjectId
 
 class UserDBManager(BaseDBManager):
     """
     Manages database operations related to users using Motor for asynchronous access.
     """
+
+    async def find_user_by_id(self, user_id: str) -> Optional[dict]:
+        """
+        Finds a user document by its ObjectId asynchronously.
+
+        Parameters:
+            user_id: The string representation of the user's ObjectId.
+
+        Returns:
+            The user document if found, None otherwise.
+        """
+        try:
+            db_instance = await self.get_db()
+            user = await db_instance["users"].find_one({"_id": ObjectId(user_id)})
+            return user
+        except Exception as e:
+            self.logger.error(f"Error finding a user by ID: {e}")
+            raise
 
     async def find_user_by_email(self, email: str) -> Optional[dict]:
         """

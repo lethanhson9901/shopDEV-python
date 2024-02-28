@@ -3,7 +3,7 @@
 from src.models.user_models import SignupRequestModel
 from src.dbs.key_db_manager import KeyDBManager
 from src.utils.security import (
-    JWTError, hash_password, verify_password, create_token, decode_refresh_token, is_password_complex, get_jwt_public_key, get_jwt_secret_key
+    JWTError, hash_password, verify_password, create_token, decode_token, is_password_complex, get_jwt_public_key, get_jwt_secret_key
 )
 from src.utils.email_reset import send_reset_email
 from src.dbs.user_db_manager import UserDBManager
@@ -54,9 +54,9 @@ async def register_user(signup_request: SignupRequestModel) -> dict:
 
     return SuccessResponseHandler.user_registered(user_response_data)
 
-async def authenticate_user(email: str, password: str) -> Dict[str, str]:
+async def login(email: str, password: str) -> Dict[str, str]:
     """
-    Authenticates a user based on the provided email and password.
+    Login a user based on the provided email and password.
 
     Asynchronously verifies user credentials against the database, generates access
     and refresh tokens, and saves key information. If authentication is successful,
@@ -79,8 +79,9 @@ async def authenticate_user(email: str, password: str) -> Dict[str, str]:
         UserErrorResponseHandler.incorrect_email_or_password()
 
     # Generate tokens
-    access_token = create_token(data={"sub": user["email"]}, is_refresh_token=False)
-    refresh_token = create_token(data={"sub": user["email"]}, is_refresh_token=True)
+    access_token = create_token(data={"sub": str(user["_id"])}, is_refresh_token=False)
+    refresh_token = create_token(data={"sub": str(user["_id"])}, is_refresh_token=True)
+
     
     # Load key configuration
     public_key = get_jwt_public_key()
@@ -118,17 +119,16 @@ async def renew_access_token(refresh_token: str) -> Dict[str, str]:
     - UserErrorResponse: If the refresh token is invalid or expired.
     """
     try:
-        payload = decode_refresh_token(refresh_token)
-        user_email = payload.get("sub")
+        payload = await decode_token(refresh_token)
+        user_id = payload.get("sub")
 
-        if not user_email:
+        if not user_id:
             return UserErrorResponseHandler.invalid_token()
 
-        user = await user_db_manager.find_user_by_email(user_email)
+        user = await user_db_manager.find_user_by_id(user_id)
         if not user:
             return UserErrorResponseHandler.user_not_found()
 
-        user_id = str(user.get('_id'))
         key_info = await key_db_manager.find_key_information(user_id)
 
         if not key_info or refresh_token not in key_info.get("refresh_tokens_used", []):
@@ -143,6 +143,8 @@ async def renew_access_token(refresh_token: str) -> Dict[str, str]:
 
     except JWTError as e:
         return UserErrorResponseHandler.invalid_token(message=str(e))
+
+
 
 async def update_password(email: str, current_password: str, new_password: str) -> dict:
     """
