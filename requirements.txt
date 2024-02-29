@@ -9,3 +9,4 @@ python-jose
 pydantic==1.10.4
 pydantic[email]
 Jinja2
+python-multipart

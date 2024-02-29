@@ -74,3 +74,26 @@ class KeyDBManager(BaseDBManager):
         except Exception as e:
             self.logger.error(f"Error retrieving key information for user {user_id}: {e}")
             return None
+        
+    async def invalidate_refresh_token(self, user_id: str, refresh_token: str) -> bool:
+        """
+        Invalidates a given refresh token for a user, removing it from the list of used tokens.
+
+        Parameters:
+        - user_id (str): The unique identifier for the user.
+        - refresh_token (str): The refresh token to invalidate.
+
+        Returns:
+        - bool: True if the operation is successful, False otherwise.
+        """
+        try:
+            db = await self.get_db()
+            # Pull the refresh_token from the refresh_tokens_used array
+            result = await db.keys.update_one(
+                {"user_id": user_id},
+                {"$pull": {"refresh_tokens_used": refresh_token}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            self.logger.error(f"Error invalidating refresh token for user {user_id}: {e}")
+            return False

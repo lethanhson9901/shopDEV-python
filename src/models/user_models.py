@@ -204,3 +204,19 @@ class RenewAccessTokenResponseModel(BaseModel):
         ...,
         description="The role of the user associated with the access token."
     )
+
+class LogoutRequestModel(BaseModel):
+    user_id: str = Field(
+        ...,
+        description="The unique identifier of the user attempting to logout."
+    )
+    refresh_token: str = Field(
+        ...,
+        description="The refresh token that the user wants to invalidate."
+    )
+
+class LogoutResponseModel(BaseModel):
+    message: str = Field(
+        ...,
+        description="A message indicating the outcome of the logout request."
+    )

@@ -2,8 +2,8 @@
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from src.models.user_models import SignupRequestModel, LoginRequestModel, RenewAccessTokenResponseModel, RefreshTokenRequestModel, ChangePasswordRequestModel
-from src.services.user_service import register_user, login, renew_access_token, update_password
+from src.models.user_models import SignupRequestModel, LogoutRequestModel, RenewAccessTokenResponseModel, RefreshTokenRequestModel, ChangePasswordRequestModel
+from src.services.user_service import register_user, login, renew_access_token, update_password, logout
 
 async def signup_user(signup_request: SignupRequestModel) -> JSONResponse:
     """Registers a new user with the given signup request data."""
@@ -50,5 +50,25 @@ async def refresh_access_token_endpoint(refresh_request: RefreshTokenRequestMode
         return result
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+async def logout_user(logout_request: LogoutRequestModel) -> JSONResponse:
+    """
+    Logs out a user by invalidating their current refresh token.
+
+    Parameters:
+    - logout_request: The request model containing the refresh token to be invalidated.
+
+    Returns:
+    - JSONResponse: The response indicating the outcome of the logout operation.
+    """
+    try:
+        result = await logout(logout_request.user_id, logout_request.refresh_token)
+        if "error" in result:
+            raise HTTPException(status_code=result["status"], detail=result["error"])
+        return JSONResponse(status_code=200, content={"message": "Successfully logged out"})
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")

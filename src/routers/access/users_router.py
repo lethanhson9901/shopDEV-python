@@ -1,9 +1,18 @@
 # src/routers/access/user_router.py
 
-from fastapi import APIRouter, status, Response, HTTPException, Depends
-from src.controllers.access_controller import signup_user, login_user, refresh_access_token_endpoint, change_password
-from src.models.user_models import SignupRequestModel, LoginRequestModel, RefreshTokenRequestModel, RenewAccessTokenResponseModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
+from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
+
+from src.controllers.access_controller import (
+    signup_user, login_user, logout_user,
+    refresh_access_token_endpoint, change_password
+)
+from src.models.user_models import (
+    SignupRequestModel, LogoutRequestModel, LogoutResponseModel,
+    RefreshTokenRequestModel, RenewAccessTokenResponseModel,
+    SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel,
+    ChangePasswordResponseModel
+)
 
 users_router = APIRouter(tags=["users"])
 
@@ -88,4 +97,22 @@ async def refresh_token(refresh_request: RefreshTokenRequestModel):
         return await refresh_access_token_endpoint(refresh_request)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
-    
+
+@users_router.post("/logout", response_model=LogoutResponseModel, status_code=status.HTTP_200_OK)
+async def logout(logout_request: LogoutRequestModel):
+    """
+    User Logout
+
+    Invalidates a user's current refresh token, effectively logging them out of the system. Ensures the token cannot be reused for obtaining new access tokens.
+
+    ### Request Body
+    - **refresh_token**: The refresh token to be invalidated.
+
+    ### Responses
+    - **200 OK**: Successfully logged out.
+    - **401 Unauthorized**: Invalid or expired refresh token.
+    """
+    try:
+        return await logout_user(logout_request)
+    except HTTPException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)

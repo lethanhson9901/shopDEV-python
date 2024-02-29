@@ -98,11 +98,7 @@ async def login(email: str, password: str) -> Dict[str, str]:
     
     # Retrieve or default user role
     user_role = user.get('role', 'Unknown')
-    print(SuccessResponseHandler.user_authenticated(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_role=user_role
-    ))
+
     # Return successful authentication response
     return SuccessResponseHandler.user_authenticated(
         access_token=access_token,
@@ -148,7 +144,6 @@ async def renew_access_token(refresh_token: str) -> Dict[str, str]:
 
     except JWTError as e:
         return UserErrorResponseHandler.invalid_token(message=str(e))
-
 
 
 async def update_password(email: str, current_password: str, new_password: str) -> dict:
@@ -211,4 +206,28 @@ async def initiate_password_reset(email: str) -> dict:
 
     return SuccessResponseHandler.general_success(
         data={}, message="Password reset email sent successfully"
+    )
+
+
+async def logout(user_id: str, refresh_token: str) -> dict:
+    """
+    Logs out a user by invalidating their refresh token.
+
+    Parameters:
+    - user_id: The user's unique identifier.
+    - refresh_token: The refresh token to invalidate.
+
+    Returns:
+    - A success response indicating the user has been logged out.
+    """
+    # Validate user_id and refresh_token
+    key_info = await key_db_manager.find_key_information(user_id)
+    if not key_info or refresh_token not in key_info.get("refresh_tokens_used", []):
+        return UserErrorResponseHandler.invalid_token()
+
+    # Invalidate the refresh token
+    await key_db_manager.invalidate_refresh_token(user_id, refresh_token)
+
+    return SuccessResponseHandler.general_success(
+        data={}, message="Successfully logged out"
     )

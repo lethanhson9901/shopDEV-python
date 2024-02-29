@@ -24,7 +24,7 @@ class JWTAuthentication:
             token (str): The JWT token extracted by FastAPI's OAuth2PasswordBearer.
             api_key (str): The API key extracted from the request header.
         """
-        print(f"Received token: {token}")  # Added for debugging
+
         if token is None:
             AuthErrorResponseHandler.missing_authorization_header()
         try:
