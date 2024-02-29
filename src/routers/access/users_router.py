@@ -3,9 +3,9 @@
 from fastapi import APIRouter, status, Response, HTTPException, Depends
 from src.controllers.access_controller import signup_user, login_user, refresh_access_token_endpoint, change_password
 from src.models.user_models import SignupRequestModel, LoginRequestModel, RefreshTokenRequestModel, RenewAccessTokenResponseModel, SignupResponseModel, LoginResponseModel, ChangePasswordRequestModel, ChangePasswordResponseModel
-from src.auth.authentication_middleware import jwt_authentication_middleware
+from fastapi.security import OAuth2PasswordRequestForm
 
-users_router = APIRouter()
+users_router = APIRouter(tags=["users"])
 
 @users_router.post("/signup", response_model=SignupResponseModel, status_code=status.HTTP_201_CREATED)
 async def signup(signup_request: SignupRequestModel):
@@ -33,7 +33,7 @@ async def signup(signup_request: SignupRequestModel):
 
 
 @users_router.post("/login", response_model=LoginResponseModel)
-async def login(login_request: LoginRequestModel, response: Response):
+async def login(form: OAuth2PasswordRequestForm = Depends()):
     """
     User Login
 
@@ -47,7 +47,7 @@ async def login(login_request: LoginRequestModel, response: Response):
     - **200 OK**: Authentication successful. Returns access and refresh tokens.
     - **401 Unauthorized**: Authentication failed due to invalid credentials.
     """
-    return await login_user(login_request)
+    return await login_user(form.username, form.password)
 
 
 @users_router.post("/change-password", response_model=LoginResponseModel)

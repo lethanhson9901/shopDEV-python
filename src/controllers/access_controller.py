@@ -12,9 +12,9 @@ async def signup_user(signup_request: SignupRequestModel) -> JSONResponse:
         raise HTTPException(status_code=result["status"], detail=result["error"])
     return JSONResponse(status_code=result["status"], content=result)
 
-async def login_user(login_request: LoginRequestModel) -> JSONResponse:
+async def login_user(email, password) -> JSONResponse:
     """Authenticates a user and generates JWT access and refresh tokens."""
-    result = await login(login_request.email, login_request.password)
+    result = await login(email, password)
     if "error" in result:
         raise HTTPException(status_code=result["status"], detail=result["error"])
     return JSONResponse(status_code=result["status"], content=result)

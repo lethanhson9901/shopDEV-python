@@ -72,6 +72,7 @@ async def login(email: str, password: str) -> Dict[str, str]:
     Raises:
     - UserErrorResponse: If the email or password is incorrect.
     """
+    
     # Attempt to find the user by email
     user = await user_db_manager.find_user_by_email(email)
     if not user or not await verify_password(password, user['password']):
@@ -97,7 +98,11 @@ async def login(email: str, password: str) -> Dict[str, str]:
     
     # Retrieve or default user role
     user_role = user.get('role', 'Unknown')
-
+    print(SuccessResponseHandler.user_authenticated(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_role=user_role
+    ))
     # Return successful authentication response
     return SuccessResponseHandler.user_authenticated(
         access_token=access_token,
