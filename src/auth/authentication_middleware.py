@@ -1,11 +1,11 @@
 # src/auth/authentication_middleware.py
 
-from fastapi import Header, Depends, HTTPException
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import FastAPI, HTTPException, Depends, Security, status
+from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
 from jose import jwt, JWTError
 from src.utils.security import decode_token
 from src.dbs.key_db_manager import KeyDBManager
-from src.core.auth_error_response_handler import AuthErrorResponseHandler  # Import the AuthErrorResponseHandler
+from src.core.auth_error_response_handler import AuthErrorResponseHandler
 
 class JWTAuthentication:
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/users/login")
@@ -18,10 +18,11 @@ class JWTAuthentication:
     @classmethod
     async def authenticate_token(cls, token: str = Depends(oauth2_scheme)):
         """
-        Middleware to authenticate JWT tokens in FastAPI.
+        Middleware to authenticate JWT tokens and API keys in FastAPI.
         
         Args:
             token (str): The JWT token extracted by FastAPI's OAuth2PasswordBearer.
+            api_key (str): The API key extracted from the request header.
         """
         print(f"Received token: {token}")  # Added for debugging
         if token is None:
@@ -42,6 +43,13 @@ class JWTAuthentication:
 
         return {"user_id": user_id, "refresh_token": key_info.get('refresh_token')}
 
-    # You can include any additional methods here as needed, following the
-    # structure and functionality from the provided AuthenticationService example.
+    # Additional methods as needed, following the structure from AuthenticationService example.
 
+
+api_key_header = APIKeyHeader(name="x-auth-token", auto_error=False)
+
+def verify_api_key(api_key_header: str = Security(api_key_header)):
+    if api_key_header != "secured_api_key":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized API-KEY"
+        )

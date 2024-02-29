@@ -8,11 +8,15 @@ import asyncio
 from src.dbs.init_mongodb import Database, start_monitoring
 from src.helpers.log_config import setup_logger, log_requests, scheduled_cleanup
 from src.routers.api_v1_router import api_v1_router
-from src.auth.authentication_middleware import JWTAuthentication
+from src.auth.authentication_middleware import JWTAuthentication, verify_api_key
 from contextlib import asynccontextmanager
 import os
 
-app = FastAPI(title='Python-Dev API', description='A sample FastAPI application.', version='1.0.0')
+app = FastAPI( title='Python-Dev API', 
+               description='A sample FastAPI application.', 
+               version='1.0.0',
+               dependencies=[Depends(verify_api_key)],
+            )
 
 @app.get("/protected-route")
 async def protected_route(user_info: dict = Depends(JWTAuthentication.authenticate_token)):
