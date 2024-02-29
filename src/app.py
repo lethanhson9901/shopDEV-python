@@ -15,7 +15,7 @@ import os
 app = FastAPI( title='Python-Dev API', 
                description='A sample FastAPI application.', 
                version='1.0.0',
-               dependencies=[Depends(verify_api_key)],
+            #    dependencies=[Depends(verify_api_key)],
             )
 
 @app.get("/protected-route")
