@@ -46,3 +46,28 @@ class UserErrorResponseHandler(ErrorResponseHandler):
         return ErrorResponseHandler.raise_http_exception(
             status_code=401, detail=message)
 
+    @staticmethod
+    def suspicious_activity_detected():
+        """
+        Raises an HTTP exception for detected suspicious activities, potentially indicating a security issue.
+        
+        Returns:
+        - Raises an HTTP exception with a 403 status code and a custom error message.
+        """
+        return ErrorResponseHandler.raise_http_exception(
+            status_code=403, detail="Suspicious activity detected. Your request cannot be completed.")
+
+
+    @staticmethod
+    def operation_failed(message="An operation failed"):
+        """
+        Raises an HTTP exception for generic operation failures.
+
+        Parameters:
+        - message (str): Custom message detailing the failure.
+
+        Returns:
+        - Raises an HTTP exception with a 500 status code.
+        """
+        return ErrorResponseHandler.raise_http_exception(
+            status_code=500, detail=message)

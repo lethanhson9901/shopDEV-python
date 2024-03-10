@@ -196,6 +196,10 @@ class RenewAccessTokenResponseModel(BaseModel):
         ...,
         description="The newly generated JWT access token."
     )
+    refresh_token: str = Field(
+        ...,
+        description="The newly generated JWT refresh token."
+    )
     token_type: str = Field(
         default="bearer",
         description="The type of the token issued."

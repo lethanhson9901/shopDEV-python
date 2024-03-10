@@ -132,14 +132,31 @@ async def renew_access_token(refresh_token: str) -> Dict[str, str]:
 
         key_info = await key_db_manager.find_key_information(user_id)
 
-        if not key_info or refresh_token not in key_info.get("refresh_tokens_used", []):
+        # New condition: Check if key_info does not exist
+        if not key_info:
             return UserErrorResponseHandler.invalid_token()
 
+        # Check if the refresh token has already been used
+        if refresh_token in key_info.get("refresh_tokens_used", []):
+            # Security response: delete the token from the list and return an error
+            await key_db_manager.delete_refresh_token(user_id, refresh_token)
+            return UserErrorResponseHandler.suspicious_activity_detected()
+        
+        # Add the current refresh token to the list of used tokens before issuing a new one
+        token_add_success = await key_db_manager.add_refresh_token_to_list(user_id, refresh_token)
+        if not token_add_success:
+            # Handle the failure to add the refresh token to the list appropriately
+            return UserErrorResponseHandler.operation_failed("Failed to record the refresh token.")
+
+        # Proceed with creating a new access token
         new_access_token = create_token(data={"sub": user_id}, is_refresh_token=False)
+        new_refresh_token = create_token(data={"sub": str(user["_id"])}, is_refresh_token=True)
+
         user_role = user.get('role', 'Unknown')
 
-        # Directly return the expected fields without wrapping in a 'data' dictionary
+        # Return the newly generated access token and user role
         return SuccessResponseHandler.renewed_access_token(access_token=new_access_token, 
+                                                           refresh_token = new_refresh_token, 
                                                            role=user_role)
 
     except JWTError as e:
@@ -222,11 +239,11 @@ async def logout(user_id: str, refresh_token: str) -> dict:
     """
     # Validate user_id and refresh_token
     key_info = await key_db_manager.find_key_information(user_id)
-    if not key_info or refresh_token not in key_info.get("refresh_tokens_used", []):
+    if not key_info:
         return UserErrorResponseHandler.invalid_token()
 
-    # Invalidate the refresh token
-    await key_db_manager.invalidate_refresh_token(user_id, refresh_token)
+    # Delete the refresh token
+    await key_db_manager.delete_refresh_token(user_id, refresh_token)
 
     return SuccessResponseHandler.general_success(
         data={}, message="Successfully logged out"

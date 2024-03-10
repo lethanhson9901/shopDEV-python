@@ -27,14 +27,6 @@ class KeyDBManager(BaseDBManager):
         """
         try:
             db = await self.get_db()
-            existing_data = await db.keys.find_one({"user_id": user_id}) or {}
-            refresh_tokens_used = existing_data.get("refresh_tokens_used", [])
-            
-            # Limit the size of the refresh tokens list to the latest 10 tokens
-            max_tokens_stored = 10
-            refresh_tokens_used = refresh_tokens_used[-(max_tokens_stored-1):]
-            refresh_tokens_used.append(refresh_token)
-
             result = await db.keys.update_one(
                 {"user_id": user_id},
                 {"$set": {
@@ -42,13 +34,7 @@ class KeyDBManager(BaseDBManager):
                     "public_key": public_key,
                     "private_key": private_key,
                     "updated_at": datetime.utcnow()
-                },
-                 "$push": {
-                     "refresh_tokens_used": {
-                         "$each": [refresh_token],
-                         "$slice": -max_tokens_stored
-                     }
-                 }},
+                }},
                 upsert=True
             )
             return result.acknowledged
@@ -75,25 +61,73 @@ class KeyDBManager(BaseDBManager):
             self.logger.error(f"Error retrieving key information for user {user_id}: {e}")
             return None
         
-    async def invalidate_refresh_token(self, user_id: str, refresh_token: str) -> bool:
+    async def delete_refresh_token(self, user_id: str, refresh_token: str) -> bool:
         """
-        Invalidates a given refresh token for a user, removing it from the list of used tokens.
+        Deletes the user's record based on user_id.
 
         Parameters:
-        - user_id (str): The unique identifier for the user.
-        - refresh_token (str): The refresh token to invalidate.
+        - user_id (str): The unique identifier for the user to delete.
+        - refresh_token (str): The refresh token related to the user. [Note: This parameter is maintained for interface consistency but is not used in the deletion process.]
 
         Returns:
         - bool: True if the operation is successful, False otherwise.
         """
         try:
             db = await self.get_db()
-            # Pull the refresh_token from the refresh_tokens_used array
+            # Delete the user's record from the database
+            result = await db.keys.delete_one({"user_id": user_id})
+            return result.deleted_count > 0
+        except Exception as e:
+            self.logger.error(f"Error deleting user record for user {user_id}: {e}")
+            return False
+    
+    async def add_refresh_token_to_list(self, user_id: str, refresh_token: str) -> bool:
+        """
+        Adds a refresh token to the refresh_tokens_used list for a specific user, ensuring the list does not exceed a predefined limit.
+
+        Parameters:
+        - user_id (str): The unique identifier for the user.
+        - refresh_token (str): The refresh token to add to the list.
+
+        Returns:
+        - bool: True if the operation is successful, False otherwise.
+        """
+        try:
+            db = await self.get_db()
+            # Define the maximum number of refresh tokens to store
+            max_tokens_stored = 10
+
+            # Use MongoDB's $addToSet and $slice to efficiently manage the list size and uniqueness
             result = await db.keys.update_one(
                 {"user_id": user_id},
-                {"$pull": {"refresh_tokens_used": refresh_token}}
+                {
+                    "$push": {
+                        "refresh_tokens_used": {
+                            "$each": [refresh_token],
+                            "$slice": -max_tokens_stored
+                        }
+                    }
+                }
             )
             return result.modified_count > 0
         except Exception as e:
-            self.logger.error(f"Error invalidating refresh token for user {user_id}: {e}")
+            self.logger.error(f"Error adding refresh token for user {user_id}: {e}")
             return False
+    
+    async def find_by_refresh_token_used(self, refresh_token: str):
+        """
+        Finds a key record based on a refresh token used.
+
+        Parameters:
+        - refresh_token (str): The refresh token to search for in the refresh_tokens_used list.
+
+        Returns:
+        - dict: The key record if a matching refresh token is found, None otherwise.
+        """
+        try:
+            db = await self.get_db()
+            key_record = await db.keys.find_one({"refresh_tokens_used": refresh_token})
+            return key_record
+        except Exception as e:
+            self.logger.error(f"Error finding key record by refresh token {refresh_token}: {e}")
+            return None

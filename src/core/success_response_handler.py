@@ -108,7 +108,7 @@ class SuccessResponseHandler:
         }
 
     @staticmethod
-    def renewed_access_token(access_token: str, role: str) -> dict:
+    def renewed_access_token(access_token: str, refresh_token, role: str) -> dict:
         """
         Success response for renewing an access token.
 
@@ -121,6 +121,7 @@ class SuccessResponseHandler:
         """
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "token_type": "bearer",
             "role": role,
             "message": "Access token renewed successfully",
