@@ -1,74 +1,107 @@
 # src/controllers/access_controller.py
-
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from src.models.user_models import SignupRequestModel, LogoutRequestModel, RenewAccessTokenResponseModel, RefreshTokenRequestModel, ChangePasswordRequestModel
-from src.services.user_service import register_user, login, renew_access_token, update_password, logout
+from src.models.user_models import (
+    SignupRequestModel, LogoutRequestModel, 
+    RenewAccessTokenResponseModel, RefreshTokenRequestModel, 
+    ChangePasswordRequestModel
+)
+from src.services.user_service import UserService
 
-async def signup_user(signup_request: SignupRequestModel) -> JSONResponse:
-    """Registers a new user with the given signup request data."""
-    result = await register_user(signup_request)
-    if "error" in result:
-        raise HTTPException(status_code=result["status"], detail=result["error"])
-    return JSONResponse(status_code=result["status"], content=result)
+class AccessController:
+    def __init__(self) -> None:
+        self.user_service = UserService()
 
-async def login_user(email, password) -> JSONResponse:
-    """Authenticates a user and generates JWT access and refresh tokens."""
-    result = await login(email, password)
-    
-    if "error" in result:
-        raise HTTPException(status_code=result["status"], detail=result["error"])
-    return JSONResponse(status_code=result["status"], content=result.get('data'))
+    async def signup_user(self, signup_request: SignupRequestModel) -> JSONResponse:
+        """
+        Registers a new user with the given signup request data.
 
-async def change_password(change_pwd_request: ChangePasswordRequestModel) -> JSONResponse:
-    """Updates the user's password."""
-    try:
-        # Call the update_password function with the provided parameters
-        result = await update_password(
-            email=change_pwd_request.user_email,
-            current_password=change_pwd_request.current_password,
-            new_password=change_pwd_request.new_password
-        )
-        # Return a success response
-        return JSONResponse(status_code=result["status"], content=result)
-    except HTTPException as e:
-        # If an HTTPException is raised, return the error response
-        return JSONResponse(status_code=e.status_code, content={"error": e.detail})
-    except Exception as e:
-        # If any other unexpected exception occurs, return a 500 error response
-        return JSONResponse(status_code=500, content={"error": "An unexpected error occurred."})
+        Args:
+            signup_request: The user's signup request details.
 
-
-async def refresh_access_token_endpoint(refresh_request: RefreshTokenRequestModel) -> RenewAccessTokenResponseModel:
-    """
-    Receives a refresh token and returns a new access token if the refresh token is valid.
-    """
-    try:
-        result = await renew_access_token(refresh_request.refresh_token)
+        Returns:
+            A JSONResponse containing the signup result.
+        """
+        result = await self.user_service.register_user(signup_request)
         if "error" in result:
             raise HTTPException(status_code=result["status"], detail=result["error"])
-        return result
-    except HTTPException as e:
-        raise HTTPException(status_code=e.status_code, detail=e.detail)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+        return JSONResponse(status_code=201, content=result)
 
-async def logout_user(logout_request: LogoutRequestModel) -> JSONResponse:
-    """
-    Logs out a user by invalidating their current refresh token.
+    async def login_user(self, email: str, password: str) -> JSONResponse:
+        """
+        Authenticates a user and generates JWT access and refresh tokens.
 
-    Parameters:
-    - logout_request: The request model containing the refresh token to be invalidated.
+        Args:
+            email: The user's email.
+            password: The user's password.
 
-    Returns:
-    - JSONResponse: The response indicating the outcome of the logout operation.
-    """
-    try:
-        result = await logout(logout_request.user_id, logout_request.refresh_token)
+        Returns:
+            A JSONResponse containing the authentication result.
+        """
+        result = await self.user_service.login(email, password)
+        
         if "error" in result:
             raise HTTPException(status_code=result["status"], detail=result["error"])
-        return JSONResponse(status_code=200, content={"message": "Successfully logged out"})
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+        return JSONResponse(status_code=200, content=result.get('data'))
+
+    async def change_password(self, change_pwd_request: ChangePasswordRequestModel) -> JSONResponse:
+        """
+        Updates the user's password.
+
+        Args:
+            change_pwd_request: Details for changing the user's password.
+
+        Returns:
+            A JSONResponse indicating the outcome of the password change.
+        """
+        try:
+            result = await self.user_service.update_password(
+                email=change_pwd_request.user_email,
+                current_password=change_pwd_request.current_password,
+                new_password=change_pwd_request.new_password
+            )
+            return JSONResponse(status_code=200, content=result)
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
+    async def refresh_access_token_endpoint(self, refresh_request: RefreshTokenRequestModel) -> RenewAccessTokenResponseModel:
+        """
+        Refreshes an access token using a valid refresh token.
+
+        Args:
+            refresh_request: The refresh token request details.
+
+        Returns:
+            A new access token.
+        """
+        try:
+            result = await self.user_service.renew_access_token(refresh_request.refresh_token)
+            if "error" in result:
+                raise HTTPException(status_code=result["status"], detail=result["error"])
+            return result
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+
+    async def logout_user(self, logout_request: LogoutRequestModel) -> JSONResponse:
+        """
+        Logs out a user by invalidating their current refresh token.
+
+        Args:
+            logout_request: The logout request details.
+
+        Returns:
+            A JSONResponse indicating the outcome of the logout operation.
+        """
+        try:
+            result = await self.user_service.logout(logout_request.user_id, logout_request.refresh_token)
+            if "error" in result:
+                raise HTTPException(status_code=result["status"], detail=result["error"])
+            return JSONResponse(status_code=200, content={"message": "Successfully logged out"})
+        except HTTPException as e:
+            raise e
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="An unexpected error occurred.")

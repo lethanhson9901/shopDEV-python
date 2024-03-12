@@ -114,8 +114,15 @@ def create_token(data: dict,
                       else CurrentConfig.ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.utcnow() + (expires_delta or 
                                    timedelta(minutes=expire_minutes))
+    
+    token_type = "refresh" if is_refresh_token else "access"
+    
     to_encode = data.copy()
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "type": token_type  # Add token type to the payload
+    })
+    
     return jwt.encode(to_encode, get_jwt_secret_key(),
                       algorithm=CurrentConfig.ALGORITHM)
 

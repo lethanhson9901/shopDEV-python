@@ -3,10 +3,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from src.controllers.access_controller import (
-    signup_user, login_user, logout_user,
-    refresh_access_token_endpoint, change_password
-)
+from src.controllers.access_controller import AccessController
 from src.models.user_models import (
     SignupRequestModel, LogoutRequestModel, LogoutResponseModel,
     RefreshTokenRequestModel, RenewAccessTokenResponseModel,
@@ -16,8 +13,12 @@ from src.models.user_models import (
 
 users_router = APIRouter(tags=["users"])
 
+# Dependency that creates a new instance of AccessController
+def get_access_controller():
+    return AccessController()
+
 @users_router.post("/signup", response_model=SignupResponseModel, status_code=status.HTTP_201_CREATED)
-async def signup(signup_request: SignupRequestModel):
+async def signup(signup_request: SignupRequestModel, controller: AccessController = Depends(get_access_controller)):
     """
     User Signup
 
@@ -38,11 +39,11 @@ async def signup(signup_request: SignupRequestModel):
     - **400 Bad Request**: Invalid request data, such as missing required fields or validation failures.
     - **409 Conflict**: The request could not be completed due to a conflict with the current state of the resource (user_id for example). 
     """
-    return await signup_user(signup_request)
+    return await controller.signup_user(signup_request)
 
 
 @users_router.post("/login", response_model=LoginResponseModel)
-async def login(form: OAuth2PasswordRequestForm = Depends()):
+async def login(form: OAuth2PasswordRequestForm = Depends(), controller: AccessController = Depends(get_access_controller)):
     """
     User Login
 
@@ -56,11 +57,11 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     - **200 OK**: Authentication successful. Returns access and refresh tokens.
     - **401 Unauthorized**: Authentication failed due to invalid credentials.
     """
-    return await login_user(form.username, form.password)
+    return await controller.login_user(form.username, form.password)
 
 
 @users_router.post("/change-password", response_model=LoginResponseModel)
-async def post_change_password(change_password_request: ChangePasswordRequestModel):
+async def post_change_password(change_password_request: ChangePasswordRequestModel, controller: AccessController = Depends(get_access_controller)):
     """
     Change Password
 
@@ -77,10 +78,10 @@ async def post_change_password(change_password_request: ChangePasswordRequestMod
     - **401 Unauthorized**: Authentication failed due to incorrect current password.
     - **500 Internal Server Error**: An unexpected error occurred during the password change process.
     """
-    return await change_password(change_password_request)
+    return await controller.change_password(change_password_request)
 
 @users_router.post("/token/refresh", response_model=RenewAccessTokenResponseModel, status_code=status.HTTP_200_OK)
-async def refresh_token(refresh_request: RefreshTokenRequestModel):
+async def refresh_token(refresh_request: RefreshTokenRequestModel, controller: AccessController = Depends(get_access_controller)):
     """
     Refresh Access Token
 
@@ -94,12 +95,12 @@ async def refresh_token(refresh_request: RefreshTokenRequestModel):
     - **401 Unauthorized**: Failed to refresh the access token due to an invalid or expired refresh token.
     """
     try:
-        return await refresh_access_token_endpoint(refresh_request)
+        return await controller.refresh_access_token_endpoint(refresh_request)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
 @users_router.post("/logout", response_model=LogoutResponseModel, status_code=status.HTTP_200_OK)
-async def logout(logout_request: LogoutRequestModel):
+async def logout(logout_request: LogoutRequestModel, controller: AccessController = Depends(get_access_controller)):
     """
     User Logout
 
@@ -113,6 +114,6 @@ async def logout(logout_request: LogoutRequestModel):
     - **401 Unauthorized**: Invalid or expired refresh token.
     """
     try:
-        return await logout_user(logout_request)
+        return await controller.logout_user(logout_request)
     except HTTPException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
